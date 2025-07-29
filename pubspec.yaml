@@ -48,9 +48,10 @@ dependencies:
 
 
   # New for Google Cast & Sharing
-  cast: ^2.1.0
   share_plus: ^11.0.0
   shared_preferences: ^2.5.3
+  simple_pip_mode: ^1.1.0
+  bonsoir: ^6.0.0
 
 dev_dependencies:
   flutter_test:

@@ -241,7 +241,11 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
     super.initState();
     _initPrefs();
     _fetchAllAudios();
-    _searchController.addListener(() => setState(() {}));
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    if (mounted) setState(() {});
   }
 
   void _deduplicateAllPlaylists() {
@@ -327,7 +331,10 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
   }
 
   Future<void> _fetchAllAudios() async {
-    setState(() => _loading = true);
+    if (mounted)
+      setState(() {
+        _loading = true;
+      });
     final result = await AudioService.fetchAllAudios();
     if (result.permissionState == PermissionState.authorized ||
         result.permissionState == PermissionState.limited) {
@@ -340,13 +347,14 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
           uniqueAudios.add(a);
         }
       }
-      setState(() {
-        _audioAssets = uniqueAudios;
-        _loading = false;
-      });
+      if (mounted)
+        setState(() {
+          _audioAssets = uniqueAudios;
+          _loading = false;
+        });
       _buildFolderMap(result.audios);
     } else {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Storage permission required.')),
@@ -367,18 +375,24 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         folderMap.putIfAbsent(dir, () => []).add(asset);
       }
     }
-    setState(() {
-      _folderMap = folderMap;
-      _folderList = folderMap.keys.toList();
-    });
+    if (mounted)
+      setState(() {
+        _folderMap = folderMap;
+        _folderList = folderMap.keys.toList();
+      });
   }
 
-  void _startSearch() => setState(() => _isSearching = true);
+  void _startSearch() {
+    if (mounted) setState(() => _isSearching = true);
+  }
+
   void _stopSearch() {
-    setState(() {
-      _isSearching = false;
-      _searchController.clear();
-    });
+    if (mounted) {
+      setState(() {
+        _isSearching = false;
+        _searchController.clear();
+      });
+    }
   }
 
   @override
@@ -389,8 +403,12 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
 
   @override
   void dispose() {
-    routeObserver.unsubscribe(this);
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    // Only unsubscribe if actually subscribed
+    try {
+      routeObserver.unsubscribe(this);
+    } catch (_) {}
     super.dispose();
   }
 

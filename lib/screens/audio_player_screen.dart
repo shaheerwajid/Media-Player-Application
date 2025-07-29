@@ -7,6 +7,7 @@ import 'audio_screen_standalone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/native_album_art.dart';
 import 'dart:typed_data';
+import 'package:share_plus/share_plus.dart';
 
 class AudioPlayerScreen extends StatefulWidget {
   final List<AssetEntity> audios;
@@ -37,6 +38,10 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   String? _currentPlaylist;
   final TextEditingController _playlistController = TextEditingController();
   String _loopMode = 'order'; // 'order', 'loop', 'shuffle', 'stop'
+
+  // Cache for album art future
+  Future<Uint8List?>? _albumArtFuture;
+  File? _albumArtFile;
 
   @override
   void initState() {
@@ -396,6 +401,18 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                   }
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.share, color: Colors.blue),
+                title: const Text('Share'),
+                onTap: () async {
+                  Navigator.pop(c);
+                  final file = await widget.audios[_currentIndex].file;
+                  if (file == null) return;
+                  await Share.shareXFiles([
+                    XFile(file.path),
+                  ], text: 'Check out this audio!');
+                },
+              ),
             ],
           ),
         );
@@ -427,6 +444,15 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
         );
       },
     );
+  }
+
+  void _updateAlbumArtFuture(File? file) {
+    if (_albumArtFile?.path != file?.path) {
+      _albumArtFile = file;
+      _albumArtFuture = file != null
+          ? NativeAlbumArt.getAlbumArt(file.path)
+          : Future.value(null);
+    }
   }
 
   @override
@@ -497,13 +523,29 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                 lyrics: lyrics,
               );
             }
-            final contentUri = currentAudio.id;
+            final file = fileSnapshot.data;
+            final filePath = file?.path;
+            print(
+              'AudioPlayerScreen: filePath for album art: '
+              ' [33m [1m$filePath [0m',
+            );
+            _updateAlbumArtFuture(file);
             return FutureBuilder<Uint8List?>(
-              future: NativeAlbumArt.getAlbumArt(contentUri),
+              future: _albumArtFuture,
               builder: (context, artSnapshot) {
                 ImageProvider? albumArt;
-                if (artSnapshot.hasData && artSnapshot.data != null) {
-                  albumArt = MemoryImage(artSnapshot.data!);
+                if (artSnapshot.connectionState == ConnectionState.done) {
+                  if (artSnapshot.hasData && artSnapshot.data != null) {
+                    print(
+                      'AudioPlayerScreen: Album art fetched for $filePath, bytes: '
+                      ' [32m [1m${artSnapshot.data!.length} [0m',
+                    );
+                    albumArt = MemoryImage(artSnapshot.data!);
+                  } else {
+                    print(
+                      'AudioPlayerScreen: No album art found for $filePath',
+                    );
+                  }
                 }
                 return AudioScreenStandalone(
                   isAudioPlayerReady: _isAudioPlayerReady,

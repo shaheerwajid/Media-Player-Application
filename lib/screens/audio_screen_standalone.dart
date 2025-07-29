@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'dart:math' as Math;
 
 class AudioScreenStandalone extends StatefulWidget {
   final bool isAudioPlayerReady;
@@ -15,12 +16,13 @@ class AudioScreenStandalone extends StatefulWidget {
   final void Function(int ms)? onSeek;
   final ImageProvider? albumArt;
   final String? lyrics;
+  final VoidCallback? onSwitchToVideo;
 
   const AudioScreenStandalone({
     Key? key,
     required this.isAudioPlayerReady,
     required this.formatDuration,
-    required this.playbackState,
+    this.playbackState = 'paused',
     required this.playbackPositionMs,
     this.totalDurationMs,
     required this.onNext,
@@ -30,6 +32,7 @@ class AudioScreenStandalone extends StatefulWidget {
     this.onSeek,
     this.albumArt,
     this.lyrics,
+    this.onSwitchToVideo,
   }) : super(key: key);
 
   @override
@@ -94,7 +97,7 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
         (widget.totalDurationMs != null && widget.totalDurationMs! > 0)
         ? widget.totalDurationMs!.toDouble()
         : (_sliderValue + 1000);
-    final isPlaying = widget.playbackState == 'playing';
+    final isPlaying = (widget.playbackState ?? 'paused') == 'playing';
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -118,49 +121,61 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Album art or icon with animated glow
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 600),
-                    curve: Curves.easeInOut,
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: isPlaying
-                              ? const Color(0xFF4A5C6A).withOpacity(0.45)
-                              : const Color(0xFF253745).withOpacity(0.18),
-                          blurRadius: isPlaying ? 32 : 12,
-                          spreadRadius: isPlaying ? 8 : 2,
-                        ),
-                      ],
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.18),
-                        width: 3,
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircularWaveform(
+                        isPlaying: isPlaying,
+                        radius: 80,
+                        barCount: 32,
+                        barWidth: 5,
+                        barHeight: 24,
                       ),
-                      gradient: const RadialGradient(
-                        colors: [
-                          Color(0xFF9BA8AB),
-                          Color(0xFF4A5C6A),
-                          Color(0xFF06141B),
-                        ],
-                        radius: 0.9,
-                      ),
-                    ),
-                    child: widget.albumArt != null
-                        ? ClipOval(
-                            child: Image(
-                              image: widget.albumArt!,
-                              width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeInOut,
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: isPlaying
+                                  ? const Color(0xFF4A5C6A).withOpacity(0.45)
+                                  : const Color(0xFF253745).withOpacity(0.18),
+                              blurRadius: isPlaying ? 32 : 12,
+                              spreadRadius: isPlaying ? 8 : 2,
                             ),
-                          )
-                        : Icon(
-                            Icons.audiotrack,
-                            color: Colors.white.withOpacity(0.92),
-                            size: 80,
+                          ],
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.18),
+                            width: 3,
                           ),
+                          gradient: const RadialGradient(
+                            colors: [
+                              Color(0xFF9BA8AB),
+                              Color(0xFF4A5C6A),
+                              Color(0xFF06141B),
+                            ],
+                            radius: 0.9,
+                          ),
+                        ),
+                        child: widget.albumArt != null
+                            ? ClipOval(
+                                child: Image(
+                                  image: widget.albumArt!,
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Icon(
+                                Icons.audiotrack,
+                                color: Colors.white.withOpacity(0.92),
+                                size: 80,
+                              ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                   // Glassmorphism card for controls
@@ -203,6 +218,21 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                                 ),
                               ),
                             ),
+                            if (widget.onSwitchToVideo != null)
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: widget.onSwitchToVideo,
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(6.0),
+                                    child: Icon(
+                                      Icons.switch_video,
+                                      color: Color(0xFF9BA8AB),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             if (widget.onMoreOptions != null)
                               Material(
                                 color: Colors.transparent,
@@ -258,13 +288,24 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                                   BoxShadow(
                                     color: isPlaying
                                         ? const Color(
-                                            0xFF4A5C6A,
+                                            0xFFCCD0CF,
                                           ).withOpacity(0.32)
                                         : const Color(
                                             0xFF253745,
-                                          ).withOpacity(0.10),
-                                    blurRadius: isPlaying ? 18 : 8,
-                                    spreadRadius: isPlaying ? 2 : 0,
+                                          ).withOpacity(0.12),
+                                    blurRadius: isPlaying ? 12 : 6,
+                                    spreadRadius: isPlaying ? 2 : 1,
+                                  ),
+                                  BoxShadow(
+                                    color: isPlaying
+                                        ? const Color(
+                                            0xFFCCD0CF,
+                                          ).withOpacity(0.10)
+                                        : const Color(
+                                            0xFF253745,
+                                          ).withOpacity(0.04),
+                                    blurRadius: isPlaying ? 24 : 10,
+                                    spreadRadius: isPlaying ? 4 : 2,
                                   ),
                                 ],
                               ),
@@ -287,6 +328,9 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                                   widget.onSeek!(value.toInt());
                                 }
                               },
+                              activeColor: isPlaying
+                                  ? const Color(0xFFCCD0CF)
+                                  : const Color(0xFF4A5C6A),
                             ),
                           ],
                         ),
@@ -314,7 +358,7 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                         ),
                         // Animated waveform
                         const SizedBox(height: 16),
-                        _AnimatedWaveform(),
+                        AnimatedWaveform(isPlaying: isPlaying),
                         // Lyrics area
                         const SizedBox(height: 16),
                         if (widget.lyrics != null && widget.lyrics!.isNotEmpty)
@@ -458,52 +502,74 @@ class _GlassProgressBar extends StatelessWidget {
   final double max;
   final ValueChanged<double> onChanged;
   final ValueChanged<double>? onChangeEnd;
+  final Color activeColor;
   const _GlassProgressBar({
     required this.value,
     required this.max,
     required this.onChanged,
     this.onChangeEnd,
+    this.activeColor = const Color(0xFF4A5C6A),
   });
   @override
   Widget build(BuildContext context) {
-    return SliderTheme(
-      data: SliderTheme.of(context).copyWith(
-        trackHeight: 4.0,
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-        overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-        activeTrackColor: const Color(0xFF4A5C6A),
-        inactiveTrackColor: Colors.white.withOpacity(0.18),
-        thumbColor: const Color(0xFFCCD0CF),
-        overlayColor: const Color(0xFF4A5C6A).withOpacity(0.18),
-      ),
-      child: Slider(
-        value: value,
-        min: 0,
-        max: max,
-        onChanged: onChanged,
-        onChangeEnd: onChangeEnd,
-      ),
+    return Slider(
+      value: value,
+      min: 0,
+      max: max,
+      onChanged: onChanged,
+      onChangeEnd: onChangeEnd,
+      activeColor: activeColor,
     );
   }
 }
 
 // Animated waveform widget
-class _AnimatedWaveform extends StatefulWidget {
-  const _AnimatedWaveform();
+class AnimatedWaveform extends StatefulWidget {
+  final bool isPlaying;
+  const AnimatedWaveform({Key? key, required this.isPlaying}) : super(key: key);
   @override
-  State<_AnimatedWaveform> createState() => _AnimatedWaveformState();
+  State<AnimatedWaveform> createState() => _AnimatedWaveformState();
 }
 
-class _AnimatedWaveformState extends State<_AnimatedWaveform>
+class _AnimatedWaveformState extends State<AnimatedWaveform>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  static const int barCount = 12;
+  late List<Animation<double>> _barAnimations;
+
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 900),
+    );
+    _barAnimations = List.generate(barCount, (i) {
+      final delay = i * 0.08;
+      return Tween<double>(begin: 0.3, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Interval(
+            delay,
+            (delay + 0.6).clamp(0.0, 1.0),
+            curve: Curves.easeInOut,
+          ),
+        ),
+      );
+    });
+    if (widget.isPlaying) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AnimatedWaveform oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPlaying && !_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.isPlaying && _controller.isAnimating) {
+      _controller.stop();
+    }
   }
 
   @override
@@ -517,60 +583,183 @@ class _AnimatedWaveformState extends State<_AnimatedWaveform>
     return SizedBox(
       width: 120,
       height: 32,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(barCount, (i) {
+          return AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final value = _barAnimations[i].value;
+              return Container(
+                width: 6,
+                height: 8 + value * 20,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(3),
+                  color: widget.isPlaying
+                      ? const Color(0xFFCCD0CF)
+                      : const Color(0xFF4A5C6A).withOpacity(0.4),
+                  boxShadow: widget.isPlaying
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFFCCD0CF).withOpacity(0.32),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                          BoxShadow(
+                            color: const Color(0xFFCCD0CF).withOpacity(0.12),
+                            blurRadius: 18,
+                            spreadRadius: 4,
+                          ),
+                        ]
+                      : [],
+                ),
+              );
+            },
+          );
+        }),
+      ),
+    );
+  }
+}
+
+// Add the CircularWaveform widget:
+class CircularWaveform extends StatefulWidget {
+  final bool isPlaying;
+  final int barCount;
+  final double radius;
+  final double barWidth;
+  final double barHeight;
+  const CircularWaveform({
+    Key? key,
+    required this.isPlaying,
+    this.barCount = 32,
+    this.radius = 80,
+    this.barWidth = 5,
+    this.barHeight = 24,
+  }) : super(key: key);
+  @override
+  State<CircularWaveform> createState() => _CircularWaveformState();
+}
+
+class _CircularWaveformState extends State<CircularWaveform>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late List<Animation<double>> _barAnimations;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _barAnimations = List.generate(widget.barCount, (i) {
+      final delay = i / widget.barCount;
+      return Tween<double>(begin: 0.5, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Interval(
+            delay,
+            (delay + 0.5).clamp(0.0, 1.0),
+            curve: Curves.easeInOut,
+          ),
+        ),
+      );
+    });
+    if (widget.isPlaying) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant CircularWaveform oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPlaying && !_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.isPlaying && _controller.isAnimating) {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.radius * 2,
+      height: widget.radius * 2,
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
-          final t = _controller.value;
-          return CustomPaint(painter: _WaveformPainter(t));
+          return CustomPaint(
+            painter: _CircularWaveformPainter(
+              barValues: _barAnimations.map((a) => a.value).toList(),
+              barCount: widget.barCount,
+              radius: widget.radius,
+              barWidth: widget.barWidth,
+              barHeight: widget.barHeight,
+              isPlaying: widget.isPlaying,
+            ),
+          );
         },
       ),
     );
   }
 }
 
-class _WaveformPainter extends CustomPainter {
-  final double t;
-  _WaveformPainter(this.t);
+class _CircularWaveformPainter extends CustomPainter {
+  final List<double> barValues;
+  final int barCount;
+  final double radius;
+  final double barWidth;
+  final double barHeight;
+  final bool isPlaying;
+  _CircularWaveformPainter({
+    required this.barValues,
+    required this.barCount,
+    required this.radius,
+    required this.barWidth,
+    required this.barHeight,
+    required this.isPlaying,
+  });
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF4A5C6A).withOpacity(0.7)
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    final midY = size.height / 2;
-    for (int i = 0; i < 12; i++) {
-      final x = i * size.width / 11;
-      final phase = t * 2 * 3.14159 + i;
-      final y =
-          midY +
-          (midY - 4) *
-              (0.5 +
-                  0.5 *
-                      (0.7 * (i % 2 == 0 ? 1 : -1)) *
-                      (0.7 + 0.3 * t) *
-                      (0.5 + 0.5 * (i % 3 == 0 ? 1 : -1)) *
-                      (0.7 + 0.3 * t) *
-                      (0.5 + 0.5 * (i % 4 == 0 ? 1 : -1)) *
-                      (0.7 + 0.3 * t) *
-                      (0.5 + 0.5 * (i % 5 == 0 ? 1 : -1)) *
-                      (0.7 + 0.3 * t) *
-                      (0.5 + 0.5 * (i % 6 == 0 ? 1 : -1)) *
-                      (0.7 + 0.3 * t) *
-                      (0.5 + 0.5 * (i % 7 == 0 ? 1 : -1)) *
-                      (0.7 + 0.3 * t) *
-                      (0.5 + 0.5 * (i % 8 == 0 ? 1 : -1)) *
-                      (0.7 + 0.3 * t) *
-                      (0.5 + 0.5 * (i % 9 == 0 ? 1 : -1)) *
-                      (0.7 + 0.3 * t) *
-                      (0.5 + 0.5 * (i % 10 == 0 ? 1 : -1)) *
-                      (0.7 + 0.3 * t) *
-                      (0.5 + 0.5 * (i % 11 == 0 ? 1 : -1)) *
-                      (0.7 + 0.3 * t));
-      canvas.drawLine(Offset(x, midY), Offset(x, y), paint);
+    final center = Offset(size.width / 2, size.height / 2);
+    final angleStep = 2 * 3.1415926535 / barCount;
+    for (int i = 0; i < barCount; i++) {
+      final angle = i * angleStep;
+      final value = barValues[i];
+      final barLen = barHeight * value;
+      final start = Offset(
+        center.dx + (radius - barLen / 2) * Math.cos(angle),
+        center.dy + (radius - barLen / 2) * Math.sin(angle),
+      );
+      final end = Offset(
+        center.dx + (radius + barLen / 2) * Math.cos(angle),
+        center.dy + (radius + barLen / 2) * Math.sin(angle),
+      );
+      final paint = Paint()
+        ..color = isPlaying
+            ? const Color(0xFFCCD0CF)
+            : const Color(0xFF4A5C6A).withOpacity(0.4)
+        ..strokeWidth = barWidth
+        ..strokeCap = StrokeCap.round;
+      if (isPlaying) {
+        final glowPaint = Paint()
+          ..color = const Color(0xFFCCD0CF).withOpacity(0.22)
+          ..strokeWidth = barWidth * 2.5
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+        canvas.drawLine(start, end, glowPaint);
+      }
+      canvas.drawLine(start, end, paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _WaveformPainter oldDelegate) =>
-      oldDelegate.t != t;
+  bool shouldRepaint(covariant _CircularWaveformPainter oldDelegate) =>
+      oldDelegate.barValues != barValues || oldDelegate.isPlaying != isPlaying;
 }

@@ -14,7 +14,7 @@ import 'package:floating/floating.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:cast/cast.dart';
+// import 'package:cast/cast.dart';
 import 'package:easy_video_editor/easy_video_editor.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
@@ -23,6 +23,11 @@ import 'package:media_store_plus/media_store_plus.dart' show MediaStorePlatform;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
+import 'package:simple_pip_mode/simple_pip.dart';
+import 'package:simple_pip_mode/aspect_ratio.dart' as pip_mode;
+import 'package:simple_pip_mode/actions/pip_action.dart';
+import 'package:simple_pip_mode/actions/pip_actions_layout.dart';
+import 'package:simple_pip_mode/pip_widget.dart';
 
 import 'widgets/video_controls_overlay.dart';
 import 'widgets/player_gestures.dart';
@@ -30,6 +35,7 @@ import '../audio_screen.dart';
 import '../../services/native_audio_service.dart';
 import '../video_trim_screen.dart';
 import 'widgets/bottom_controls.dart';
+import '../audio_screen_standalone.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final List<AssetEntity> videoAssets;
@@ -94,7 +100,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Timer? _aspectModeOverlayTimer;
 
   // Cast devices cache
-  List<CastDevice>? _castDevices;
+  // List<CastDevice>? _castDevices;
 
   StreamSubscription<Map<String, dynamic>>? _audioStateSub;
   String _audioState = 'paused';
@@ -113,6 +119,30 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   String _loopMode = 'order'; // 'order', 'loop', 'shuffle', 'stop'
   late SharedPreferences _prefs;
 
+  final SimplePip pip = SimplePip();
+  bool isPlaying = true;
+
+  void _handlePipAction(PipAction action) {
+    switch (action) {
+      case PipAction.play:
+        player.play();
+        setState(() => isPlaying = true);
+        break;
+      case PipAction.pause:
+        player.pause();
+        setState(() => isPlaying = false);
+        break;
+      case PipAction.next:
+        _playNext();
+        break;
+      case PipAction.previous:
+        _playPrevious();
+        break;
+      default:
+        break;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -123,13 +153,61 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _initializeAndPlay(_currentIndex);
     _initBrightness();
     _startHideTimer();
-    _audioStateSub = NativeAudioService.playbackStateStream.listen((event) {
+    _audioStateSub = NativeAudioService.playbackStateStream.listen((
+      event,
+    ) async {
       if (mounted) {
         setState(() {
           _audioState = event['state'] ?? 'paused';
           _audioPositionMs = event['position'] ?? 0;
           _audioTotalDurationMs = event['duration'];
         });
+        // Dart-side playback mode logic for audio-only mode
+        if (_isAudioOnly &&
+            (event['state'] == 'completed' || event['completed'] == true)) {
+          final assets = widget.videoAssets;
+          if (_loopMode == 'order') {
+            if (_currentIndex < assets.length - 1) {
+              _currentIndex++;
+              final file = await assets[_currentIndex].file;
+              if (file != null) {
+                await NativeAudioService.playNextAudio(file.path, 0);
+                if (mounted)
+                  setState(() {
+                    _isAudioPlayerReady = true;
+                  });
+              }
+            }
+            // else: do nothing (end of playlist)
+          } else if (_loopMode == 'loop') {
+            final file = await assets[_currentIndex].file;
+            if (file != null) {
+              await NativeAudioService.playNextAudio(file.path, 0);
+              if (mounted)
+                setState(() {
+                  _isAudioPlayerReady = true;
+                });
+            }
+          } else if (_loopMode == 'shuffle') {
+            final random = (assets.length > 1)
+                ? (List<int>.generate(assets.length, (i) => i)
+                    ..remove(_currentIndex))
+                : [0];
+            random.shuffle();
+            final nextIndex = random.first;
+            _currentIndex = nextIndex;
+            final file = await assets[_currentIndex].file;
+            if (file != null) {
+              await NativeAudioService.playNextAudio(file.path, 0);
+              if (mounted)
+                setState(() {
+                  _isAudioPlayerReady = true;
+                });
+            }
+          } else if (_loopMode == 'stop') {
+            // Do nothing, stop playback
+          }
+        }
       }
     });
     _completedSub = player.stream.completed.listen((completed) {
@@ -512,242 +590,160 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   void _showMoreOptions(BuildContext context) {
-    showCupertinoModalPopup(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Options'),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              setState(() => _vrMode = !_vrMode);
-              Navigator.pop(context);
-            },
-            child: Row(
-              children: [
-                Icon(Icons.vrpano, color: _vrMode ? Colors.blue : Colors.grey),
-                const SizedBox(width: 12),
-                Text(_vrMode ? 'Disable VR Mode' : 'Enable VR Mode'),
-              ],
-            ),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              setState(() => _mirrorMode = !_mirrorMode);
-              Navigator.pop(context);
-            },
-            child: Row(
-              children: [
-                Icon(
-                  Icons.flip,
-                  color: _mirrorMode ? Colors.blue : Colors.grey,
+      builder: (c) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.repeat),
+                title: const Text('Playback Mode'),
+                subtitle: Text(
+                  _loopMode == 'order'
+                      ? 'Play in Order'
+                      : _loopMode == 'loop'
+                      ? 'Loop Current'
+                      : _loopMode == 'shuffle'
+                      ? 'Shuffle'
+                      : 'Stop After Current',
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  _mirrorMode ? 'Disable Mirror Mode' : 'Enable Mirror Mode',
-                ),
-              ],
-            ),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              _addBookmark();
-              Navigator.pop(context);
-            },
-            child: Row(
-              children: const [
-                Icon(Icons.bookmark_add, color: Colors.deepPurple),
-                SizedBox(width: 12),
-                Text('Add Bookmark'),
-              ],
-            ),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              _toggleFavourite();
-              Navigator.pop(context);
-            },
-            child: Row(
-              children: [
-                Icon(
-                  _isFavourite ? Icons.star : Icons.star_border,
-                  color: Colors.amber,
-                ),
-                const SizedBox(width: 12),
-                Text(_isFavourite ? 'Remove Favourite' : 'Add Favourite'),
-              ],
-            ),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.pop(context);
-              showCupertinoModalPopup(
-                context: context,
-                builder: (context) => CupertinoActionSheet(
-                  title: const Text('Playback Mode'),
-                  actions: [
-                    CupertinoActionSheetAction(
-                      onPressed: () {
-                        _setLoopMode('order');
-                        Navigator.pop(context);
-                      },
-                      child: Row(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Playback Mode'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.queue_play_next,
-                            color: _loopMode == 'order'
-                                ? Colors.blue
-                                : Colors.grey,
+                          RadioListTile<String>(
+                            value: 'order',
+                            groupValue: _loopMode,
+                            title: const Text('Play in Order'),
+                            onChanged: (v) {
+                              _setLoopMode('order');
+                              Navigator.pop(context);
+                            },
                           ),
-                          const SizedBox(width: 12),
-                          const Text('Play in Order'),
+                          RadioListTile<String>(
+                            value: 'loop',
+                            groupValue: _loopMode,
+                            title: const Text('Loop Current'),
+                            onChanged: (v) {
+                              _setLoopMode('loop');
+                              Navigator.pop(context);
+                            },
+                          ),
+                          RadioListTile<String>(
+                            value: 'shuffle',
+                            groupValue: _loopMode,
+                            title: const Text('Shuffle'),
+                            onChanged: (v) {
+                              _setLoopMode('shuffle');
+                              Navigator.pop(context);
+                            },
+                          ),
+                          RadioListTile<String>(
+                            value: 'stop',
+                            groupValue: _loopMode,
+                            title: const Text('Stop After Current'),
+                            onChanged: (v) {
+                              _setLoopMode('stop');
+                              Navigator.pop(context);
+                            },
+                          ),
                         ],
                       ),
                     ),
-                    CupertinoActionSheetAction(
-                      onPressed: () {
-                        _setLoopMode('loop');
-                        Navigator.pop(context);
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.repeat_one,
-                            color: _loopMode == 'loop'
-                                ? Colors.blue
-                                : Colors.grey,
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Loop Current'),
-                        ],
-                      ),
-                    ),
-                    CupertinoActionSheetAction(
-                      onPressed: () {
-                        _setLoopMode('shuffle');
-                        Navigator.pop(context);
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.shuffle,
-                            color: _loopMode == 'shuffle'
-                                ? Colors.blue
-                                : Colors.grey,
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Shuffle'),
-                        ],
-                      ),
-                    ),
-                    CupertinoActionSheetAction(
-                      onPressed: () {
-                        _setLoopMode('stop');
-                        Navigator.pop(context);
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.stop,
-                            color: _loopMode == 'stop'
-                                ? Colors.blue
-                                : Colors.grey,
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Stop After Current'),
-                        ],
-                      ),
-                    ),
-                  ],
-                  cancelButton: CupertinoActionSheetAction(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-              );
-            },
-            child: Row(
-              children: const [
-                Icon(Icons.repeat, color: Colors.deepPurple),
-                SizedBox(width: 12),
-                Text('Playback Mode'),
-              ],
-            ),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              final speed = await showCupertinoModalPopup<double>(
-                context: context,
-                builder: (context) => CupertinoActionSheet(
-                  title: const Text('Playback Speed'),
-                  actions: _speedOptions
-                      .map(
-                        (s) => CupertinoActionSheetAction(
-                          onPressed: () => Navigator.pop(context, s),
-                          child: Text(
-                            '${s}x',
-                            style: TextStyle(
-                              color: s == _playbackSpeed
-                                  ? Colors.blue
-                                  : Colors.black,
-                              fontWeight: s == _playbackSpeed
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.speed),
+                title: const Text('Playback speed'),
+                subtitle: Text(
+                  ' x',
+                ), // You can update this to show actual speed
+                onTap: () {
+                  Navigator.pop(c);
+                  _showSpeedSelect();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.phone),
+                title: const Text('Set as ringtone'),
+                onTap: () async {
+                  Navigator.pop(c);
+                  final file = await widget.videoAssets[_currentIndex].file;
+                  if (file != null) {
+                    final success = await NativeAudioService.setAsRingtone(
+                      file.path,
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            success ? 'Ringtone set' : 'Failed to set ringtone',
                           ),
                         ),
-                      )
-                      .toList(),
-                  cancelButton: CupertinoActionSheetAction(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                      );
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share, color: Colors.blue),
+                title: const Text('Share'),
+                onTap: () async {
+                  Navigator.pop(c);
+                  final file = await widget.videoAssets[_currentIndex].file;
+                  if (file == null) return;
+                  await Share.shareXFiles([
+                    XFile(file.path),
+                  ], text: 'Check out this audio!');
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showSpeedSelect() async {
+    final speed = await showCupertinoModalPopup<double>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('Playback Speed'),
+        actions: _speedOptions
+            .map(
+              (s) => CupertinoActionSheetAction(
+                onPressed: () => Navigator.pop(context, s),
+                child: Text(
+                  '${s}x',
+                  style: TextStyle(
+                    color: s == _playbackSpeed ? Colors.blue : Colors.black,
+                    fontWeight: s == _playbackSpeed
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                 ),
-              );
-              if (speed != null) {
-                setState(() {
-                  _playbackSpeed = speed;
-                });
-                player.setRate(speed);
-              }
-            },
-            child: Row(
-              children: [
-                Icon(Icons.speed, color: Colors.deepPurple),
-                const SizedBox(width: 12),
-                Text('Playback Speed: ${_playbackSpeed}x'),
-              ],
-            ),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.pop(context);
-              final file = await widget.videoAssets[_currentIndex].file;
-              if (file == null) return;
-              if (!mounted) return;
-              try {
-                await player.pause();
-              } catch (_) {}
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => VideoTrimScreen(originalFile: file),
-                ),
-              );
-            },
-            child: Row(
-              children: const [
-                Icon(Icons.cut, color: Colors.red),
-                SizedBox(width: 12),
-                Text('Trim Video'),
-              ],
-            ),
-          ),
-        ],
+              ),
+            )
+            .toList(),
         cancelButton: CupertinoActionSheetAction(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
       ),
     );
+    if (speed != null) {
+      setState(() {
+        _playbackSpeed = speed;
+      });
+      player.setRate(speed);
+    }
   }
 
   Future<void> _shareCurrentVideo() async {
@@ -762,6 +758,173 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         );
       }
     }
+  }
+
+  void _showVideoMoreOptions(BuildContext context) async {
+    final file = await widget.videoAssets[_currentIndex].file;
+    showModalBottomSheet(
+      context: context,
+      builder: (c) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.audiotrack),
+                title: const Text('Audio Track'),
+                onTap: () {
+                  Navigator.pop(c);
+                  _showAudioTracksDialog(context);
+                },
+              ),
+              /*
+              ListTile(
+                leading: const Icon(Icons.cast),
+                title: const Text('Cast'),
+                onTap: () {
+                  Navigator.pop(c);
+                  _showCastDialog(context);
+                },
+              ),
+*/
+              ListTile(
+                leading: const Icon(Icons.share, color: Colors.blue),
+                title: const Text('Share'),
+                onTap: () async {
+                  Navigator.pop(c);
+                  await _shareCurrentVideo();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.content_cut),
+                title: const Text('Trim'),
+                onTap: () async {
+                  Navigator.pop(c);
+                  if (file != null) {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => VideoTrimScreen(originalFile: file),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  _isFavourite ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                ),
+                title: Text(
+                  _isFavourite ? 'Remove Favourite' : 'Add Favourite',
+                ),
+                onTap: () {
+                  Navigator.pop(c);
+                  _toggleFavourite();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.bookmark),
+                title: const Text('Add Bookmark'),
+                onTap: () {
+                  Navigator.pop(c);
+                  _addBookmark();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Bookmark added!')),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: Icon(_vrMode ? Icons.vrpano : Icons.vrpano_outlined),
+                title: Text(_vrMode ? 'Disable VR Mode' : 'Enable VR Mode'),
+                onTap: () {
+                  Navigator.pop(c);
+                  setState(() {
+                    _vrMode = !_vrMode;
+                  });
+                },
+              ),
+              ListTile(
+                leading: Icon(_mirrorMode ? Icons.flip : Icons.flip_outlined),
+                title: Text(
+                  _mirrorMode ? 'Disable Mirror Mode' : 'Enable Mirror Mode',
+                ),
+                onTap: () {
+                  Navigator.pop(c);
+                  setState(() {
+                    _mirrorMode = !_mirrorMode;
+                  });
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.repeat),
+                title: const Text('Playback Mode'),
+                subtitle: Text(
+                  _loopMode == 'order'
+                      ? 'Play in Order'
+                      : _loopMode == 'loop'
+                      ? 'Loop Current'
+                      : _loopMode == 'shuffle'
+                      ? 'Shuffle'
+                      : 'Stop After Current',
+                ),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Playback Mode'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          RadioListTile<String>(
+                            value: 'order',
+                            groupValue: _loopMode,
+                            title: const Text('Play in Order'),
+                            onChanged: (v) {
+                              _setLoopMode('order');
+                              Navigator.pop(context);
+                            },
+                          ),
+                          RadioListTile<String>(
+                            value: 'loop',
+                            groupValue: _loopMode,
+                            title: const Text('Loop Current'),
+                            onChanged: (v) {
+                              _setLoopMode('loop');
+                              Navigator.pop(context);
+                            },
+                          ),
+                          RadioListTile<String>(
+                            value: 'shuffle',
+                            groupValue: _loopMode,
+                            title: const Text('Shuffle'),
+                            onChanged: (v) {
+                              _setLoopMode('shuffle');
+                              Navigator.pop(context);
+                            },
+                          ),
+                          RadioListTile<String>(
+                            value: 'stop',
+                            groupValue: _loopMode,
+                            title: const Text('Stop After Current'),
+                            onChanged: (v) {
+                              _setLoopMode('stop');
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _showAudioTracksDialog(BuildContext context) {
@@ -818,50 +981,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             'Cast Devices',
             style: TextStyle(color: Colors.white),
           ),
-          content: FutureBuilder<List<CastDevice>>(
-            future: _discoverCastDevices(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(
-                  height: 80,
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (snapshot.hasError) {
-                return Text(
-                  'Error: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.white),
-                );
-              }
-              final devices = snapshot.data ?? [];
-              if (devices.isEmpty) {
-                return const Text(
-                  'No devices found',
-                  style: TextStyle(color: Colors.white),
-                );
-              }
-              return SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: devices.length,
-                  itemBuilder: (context, index) {
-                    final device = devices[index];
-                    return ListTile(
-                      leading: const Icon(Icons.cast, color: Colors.white),
-                      title: Text(
-                        device.name,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      onTap: () async {
-                        Navigator.pop(context);
-                        await _castToDevice(device);
-                      },
-                    );
-                  },
-                ),
-              );
-            },
+          content: const SizedBox(
+            height: 80,
+            child: Center(child: CircularProgressIndicator()),
           ),
           actions: [
             TextButton(
@@ -872,55 +994,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         );
       },
     );
-  }
-
-  Future<List<CastDevice>> _discoverCastDevices() async {
-    _castDevices ??= await CastDiscoveryService().search();
-    return _castDevices!;
-  }
-
-  Future<void> _castToDevice(CastDevice device) async {
-    try {
-      final session = await CastSessionManager().startSession(device);
-      final file = await widget.videoAssets[_currentIndex].file;
-      if (file == null) return;
-      // Note: Local files may not play on Chromecast. Provide warning.
-      session.sendMessage(CastSession.kNamespaceReceiver, {
-        'type': 'LAUNCH',
-        'appId': 'CC1AD845', // Default media receiver
-      });
-      // After ready, load media (simple example using http sample if local)
-      final mediaUrl = file.path; // Cast the currently playing video
-      session.sendMessage(CastSession.kNamespaceMedia, {
-        'type': 'LOAD',
-        'autoPlay': true,
-        'currentTime': 0,
-        'media': {
-          'contentId': mediaUrl,
-          'contentType': 'video/mp4',
-          'streamType': 'BUFFERED',
-          'metadata': {
-            'type': 0,
-            'metadataType': 0,
-            'title': file.uri.pathSegments.isNotEmpty
-                ? file.uri.pathSegments.last
-                : 'Video',
-            'images': [],
-          },
-        },
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Casting to ${device.name}')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to cast: ${e.toString()}')),
-        );
-      }
-    }
   }
 
   Widget _buildAspectRatioVideo() {
@@ -954,118 +1027,155 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: PlayerGestures(
-        onTap: _onTapVideo,
-        onHorizontalDragStart: (details) {
-          if (_isLocked || !isPlayerInitialized || _isAudioOnly) return;
-          _dragStartDx = details.localPosition.dx;
-          _dragStartPosition = player.state.position;
-          _seekOffsetSeconds = 0;
-          if (mounted) setState(() => _showSeekOverlay = true);
-        },
-        onHorizontalDragUpdate: (details) {
-          if (_isLocked ||
-              !isPlayerInitialized ||
-              _isAudioOnly ||
-              _dragStartDx == null)
-            return;
-          final screenWidth = MediaQuery.of(context).size.width;
-          final dx = details.localPosition.dx - _dragStartDx!;
-          _seekOffsetSeconds = (dx / (screenWidth / 3) * 60);
-          if (mounted) setState(() {});
-        },
-        onHorizontalDragEnd: (details) {
-          if (_isLocked || !isPlayerInitialized || _isAudioOnly) return;
-          if (_dragStartPosition != null) {
-            final newPosition =
-                _dragStartPosition! +
-                Duration(seconds: _seekOffsetSeconds.round());
-            player.seek(
-              newPosition.clamp(Duration.zero, player.state.duration),
-            );
-          }
-          if (mounted) {
-            setState(() {
-              _showSeekOverlay = false;
-              _seekOffsetSeconds = 0;
-              _dragStartDx = null;
-              _dragStartPosition = null;
-            });
-          }
-          _startHideTimer();
-        },
-        onVerticalDragStart: (details, constraints) =>
-            _onVerticalDragStart(details, constraints),
-        onVerticalDragUpdate: (details, constraints) =>
-            _onVerticalDragUpdate(details, constraints),
-        onVerticalDragEnd: _onVerticalDragEnd,
-        child: Stack(
-          children: [
-            if (_isAudioOnly)
-              AudioScreen(
-                isAudioPlayerReady: _isAudioPlayerReady,
-                formatDuration: _formatDuration,
-                onSwitchToVideo: _switchToVideo,
-                playbackState: _audioState,
-                playbackPositionMs: _audioPositionMs,
-                totalDurationMs: _audioTotalDurationMs,
-                onNext: _playNext,
-                onPrevious: _playPrevious,
-              )
-            else
-              Center(
-                child: isPlayerInitialized
-                    ? RepaintBoundary(
-                        key: _videoScreenshotKey,
-                        child: _vrMode
-                            ? Row(
-                                children: [
-                                  Expanded(child: _buildTransformedVideo()),
-                                  Expanded(child: _buildTransformedVideo()),
-                                ],
-                              )
-                            : _buildTransformedVideo(),
-                      )
-                    : const CircularProgressIndicator(),
-              ),
-            if (!_isAudioOnly)
-              VideoControlsOverlay(
-                player: player,
-                isPlayerInitialized: isPlayerInitialized,
-                showControls: _showControls,
-                isLocked: _isLocked,
-                toggleLock: _toggleLock,
-                onMoreOptions: () => _showMoreOptions(context),
-                toggleOrientation: _toggleOrientation,
-                isLandscape: _isLandscape,
-                onEnablePiP: () async => await Floating().enable(
-                  const ImmediatePiP(aspectRatio: Rational.landscape()),
+    return PipWidget(
+      pipLayout: PipActionsLayout.media,
+      onPipAction: _handlePipAction,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: PlayerGestures(
+          onTap: _onTapVideo,
+          onHorizontalDragStart: (details) {
+            if (_isLocked || !isPlayerInitialized || _isAudioOnly) return;
+            _dragStartDx = details.localPosition.dx;
+            _dragStartPosition = player.state.position;
+            _seekOffsetSeconds = 0;
+            if (mounted) setState(() => _showSeekOverlay = true);
+          },
+          onHorizontalDragUpdate: (details) {
+            if (_isLocked ||
+                !isPlayerInitialized ||
+                _isAudioOnly ||
+                _dragStartDx == null)
+              return;
+            final screenWidth = MediaQuery.of(context).size.width;
+            final dx = details.localPosition.dx - _dragStartDx!;
+            _seekOffsetSeconds = (dx / (screenWidth / 3) * 60);
+            if (mounted) setState(() {});
+          },
+          onHorizontalDragEnd: (details) {
+            if (_isLocked || !isPlayerInitialized || _isAudioOnly) return;
+            if (_dragStartPosition != null) {
+              final newPosition =
+                  _dragStartPosition! +
+                  Duration(seconds: _seekOffsetSeconds.round());
+              player.seek(
+                newPosition.clamp(Duration.zero, player.state.duration),
+              );
+            }
+            if (mounted) {
+              setState(() {
+                _showSeekOverlay = false;
+                _seekOffsetSeconds = 0;
+                _dragStartDx = null;
+                _dragStartPosition = null;
+              });
+            }
+            _startHideTimer();
+          },
+          onVerticalDragStart: (details, constraints) =>
+              _onVerticalDragStart(details, constraints),
+          onVerticalDragUpdate: (details, constraints) =>
+              _onVerticalDragUpdate(details, constraints),
+          onVerticalDragEnd: _onVerticalDragEnd,
+          child: Stack(
+            children: [
+              if (_isAudioOnly)
+                AudioScreenStandalone(
+                  isAudioPlayerReady: _isAudioPlayerReady,
+                  formatDuration: _formatDuration,
+                  playbackState: _audioState,
+                  playbackPositionMs: _audioPositionMs,
+                  totalDurationMs: _audioTotalDurationMs,
+                  onNext: _playNext,
+                  onPrevious: _playPrevious,
+                  onPlayPause: () async {
+                    if ((_audioState ?? 'paused') == 'playing') {
+                      await NativeAudioService.pauseAudio();
+                      setState(() {
+                        _audioState = 'paused';
+                      });
+                    } else {
+                      final assets = widget.videoAssets;
+                      final file = await assets[_currentIndex].file;
+                      if (file != null) {
+                        await NativeAudioService.playNextAudio(file.path, 0);
+                        if (mounted)
+                          setState(() {
+                            _audioState = 'playing';
+                            _isAudioPlayerReady = true;
+                          });
+                      }
+                    }
+                  },
+                  onMoreOptions: () => _showMoreOptions(context),
+                  onSeek: (ms) async {
+                    if (_isAudioOnly) {
+                      await NativeAudioService.seekTo(ms);
+                    } else {
+                      player.seek(Duration(milliseconds: ms));
+                    }
+                  },
+                  albumArt: null, // You can add album art logic if available
+                  lyrics: null, // Add lyrics if available
+                  onSwitchToVideo: _switchToVideo,
+                )
+              else
+                Center(
+                  child: isPlayerInitialized
+                      ? RepaintBoundary(
+                          key: _videoScreenshotKey,
+                          child: _vrMode
+                              ? Row(
+                                  children: [
+                                    Expanded(child: _buildTransformedVideo()),
+                                    Expanded(child: _buildTransformedVideo()),
+                                  ],
+                                )
+                              : _buildTransformedVideo(),
+                        )
+                      : const CircularProgressIndicator(),
                 ),
-                onSwitchToAudio: _switchToAudio,
-                onCaptureScreenshot: _captureAndSaveScreenshot,
-                onMute: () => _setMute(!_isMuted),
-                isMuted: _isMuted,
-                onPlayPrevious: _playPrevious,
-                canPlayPrevious: _currentIndex > 0,
-                onPlayNext: _playNext,
-                canPlayNext: _currentIndex < widget.videoAssets.length - 1,
-                seekOffsetSeconds: _seekOffsetSeconds,
-                currentVolume: _currentVolume,
-                currentBrightness: _currentBrightness,
-                showSeekOverlay: _showSeekOverlay,
-                showVolumeOverlay: _showVolumeOverlay,
-                showBrightnessOverlay: _showBrightnessOverlay,
-                formatDuration: _formatDuration,
-                cycleAspectMode: _cycleAspectMode,
-                startHideTimer: _startHideTimer,
-                aspectModeOverlayText: _aspectModeOverlayText,
-                bookmarks: _bookmarks,
-                onBookmarkTap: (ms) => player.seek(Duration(milliseconds: ms)),
-              ),
-          ],
+              if (!_isAudioOnly)
+                VideoControlsOverlay(
+                  player: player,
+                  isPlayerInitialized: isPlayerInitialized,
+                  showControls: _showControls,
+                  isLocked: _isLocked,
+                  toggleLock: _toggleLock,
+                  onMoreOptions: () => _showVideoMoreOptions(context),
+                  toggleOrientation: _toggleOrientation,
+                  isLandscape: _isLandscape,
+                  onEnablePiP: () async =>
+                      await pip.enterPipMode(aspectRatio: (16, 9)),
+                  onSwitchToAudio: _switchToAudio,
+                  onCaptureScreenshot: _captureAndSaveScreenshot,
+                  onMute: () => _setMute(!_isMuted),
+                  isMuted: _isMuted,
+                  onPlayPrevious: _playPrevious,
+                  canPlayPrevious: _currentIndex > 0,
+                  onPlayNext: _playNext,
+                  canPlayNext: _currentIndex < widget.videoAssets.length - 1,
+                  seekOffsetSeconds: _seekOffsetSeconds,
+                  currentVolume: _currentVolume,
+                  currentBrightness: _currentBrightness,
+                  showSeekOverlay: _showSeekOverlay,
+                  showVolumeOverlay: _showVolumeOverlay,
+                  showBrightnessOverlay: _showBrightnessOverlay,
+                  formatDuration: _formatDuration,
+                  cycleAspectMode: _cycleAspectMode,
+                  startHideTimer: _startHideTimer,
+                  aspectModeOverlayText: _aspectModeOverlayText,
+                  bookmarks: _bookmarks,
+                  onBookmarkTap: (ms) =>
+                      player.seek(Duration(milliseconds: ms)),
+                ),
+            ],
+          ),
         ),
+      ),
+      pipChild: Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: Text('PiP Mode')),
       ),
     );
   }

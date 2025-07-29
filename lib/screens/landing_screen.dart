@@ -72,7 +72,10 @@ class _LandingScreenState extends State<LandingScreen> {
                 overlayColor: const Color(0xFF4A5C6A),
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  MaterialPageRoute(
+                    settings: const RouteSettings(name: '/home'),
+                    builder: (_) => const HomeScreen(),
+                  ),
                 ),
               ),
               _FeatureTile(
@@ -82,7 +85,10 @@ class _LandingScreenState extends State<LandingScreen> {
                 overlayColor: const Color(0xFF9BA8AB),
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AudioHomeScreen()),
+                  MaterialPageRoute(
+                    settings: const RouteSettings(name: '/audio_home'),
+                    builder: (_) => const AudioHomeScreen(),
+                  ),
                 ),
               ),
             ],
