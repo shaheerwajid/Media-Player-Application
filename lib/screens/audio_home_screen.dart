@@ -6,6 +6,7 @@ import 'audio_player_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../main.dart';
 import 'dart:ui';
+import '../widgets/skeleton_media_card.dart';
 
 class MediaFileCard extends StatefulWidget {
   final IconData icon;
@@ -51,165 +52,131 @@ class _MediaFileCardState extends State<MediaFileCard>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          color: widget.overlayColor.withOpacity(0.28),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF06141B).withOpacity(0.18),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 0),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            color: Colors.white.withOpacity(0.13),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF06141B).withOpacity(0.18),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+            border: Border.all(
+              width: 1.2,
+              style: BorderStyle.solid,
+              color: Colors.white.withOpacity(0.18),
             ),
-          ],
-          border: Border.all(
-            width: 1.2,
-            style: BorderStyle.solid,
-            color: Colors.white.withOpacity(0.10),
           ),
-        ),
-        clipBehavior: Clip.hardEdge,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: Stack(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Liquid glass blur
-              BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: const SizedBox.expand(),
-              ),
-              // Animated wavy highlight
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  final double anim = _controller.value;
-                  return Positioned(
-                    top: 0,
-                    left: -40 + 80 * anim,
-                    child: Opacity(
-                      opacity: 0.18 + 0.12 * (1 - (anim - 0.5).abs() * 2),
-                      child: Container(
-                        width: 120,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(40),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white.withOpacity(0.45),
-                              Colors.white.withOpacity(0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              // Top radial highlight
-              Positioned(
-                top: -30,
-                left: -30,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        Colors.white.withOpacity(0.18),
-                        Colors.transparent,
-                      ],
-                      radius: 0.8,
-                    ),
-                  ),
+              // Thumbnail/icon
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white.withOpacity(0.18),
+                ),
+                child: Icon(
+                  widget.icon,
+                  size: 32,
+                  color: const Color(0xFFCCD0CF),
                 ),
               ),
-              // Card content
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+              const SizedBox(width: 16),
+              // Details
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Icon(
-                          widget.icon,
-                          size: 32,
-                          color: const Color(0xFFCCD0CF),
-                        ),
-                        if (widget.isFavourite)
-                          Icon(
-                            Icons.star,
-                            color: const Color(0xFFCCD0CF),
-                            size: 20,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
                     Text(
                       widget.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFCCD0CF),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 15,
                       ),
                     ),
                     if (widget.subtitle != null) ...[
-                      const SizedBox(height: 1),
+                      const SizedBox(height: 4),
                       Text(
                         widget.subtitle!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF9BA8AB),
-                          fontSize: 12,
-                        ),
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
                   ],
                 ),
               ),
-              if (widget.duration != null)
-                Positioned(
-                  right: 10,
-                  bottom: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF06141B).withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      widget.duration!,
-                      style: const TextStyle(
-                        color: Color(0xFFCCD0CF),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+              // Favourite icon (top right)
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: widget.isFavourite
+                        ? Icon(
+                            Icons.star_outlined,
+                            key: const ValueKey('favorite'),
+                            color: const Color(0xFFCCD0CF),
+                            size: 24,
+                          )
+                        : const SizedBox(
+                            width: 24,
+                            height: 24,
+                            key: ValueKey('not_favorite'),
+                          ),
                   ),
-                ),
+                ],
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// For MediaFileCard and ListTile, create a _AnimatedMediaFileCard StatefulWidget:
+class _AnimatedMediaFileCard extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  final double borderRadius;
+  const _AnimatedMediaFileCard({
+    required this.child,
+    required this.onTap,
+    this.borderRadius = 28,
+    Key? key,
+  }) : super(key: key);
+  @override
+  State<_AnimatedMediaFileCard> createState() => _AnimatedMediaFileCardState();
+}
+
+class _AnimatedMediaFileCardState extends State<_AnimatedMediaFileCard> {
+  bool _isPressed = false;
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _isPressed ? 0.96 : 1.0,
+      duration: const Duration(milliseconds: 120),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        onTap: widget.onTap,
+        onHighlightChanged: (v) => setState(() => _isPressed = v),
+        child: widget.child,
       ),
     );
   }
@@ -307,7 +274,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.clear),
+                leading: const Icon(Icons.clear_outlined),
                 title: const Text('All Audio'),
                 onTap: () {
                   setState(() => _selectedPlaylist = null);
@@ -316,7 +283,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
               ),
               for (final playlist in _playlists)
                 ListTile(
-                  leading: const Icon(Icons.queue_music),
+                  leading: const Icon(Icons.queue_music_outlined),
                   title: Text(playlist),
                   onTap: () {
                     setState(() => _selectedPlaylist = playlist);
@@ -442,20 +409,23 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: const TextStyle(color: Color(0xFFCCD0CF)),
+                style: Theme.of(context).textTheme.bodyLarge,
                 decoration: InputDecoration(
                   hintText: 'Search audio...',
                   border: InputBorder.none,
-                  hintStyle: const TextStyle(color: Color(0xFF9BA8AB)),
+                  hintStyle: Theme.of(context).textTheme.bodyMedium,
                   filled: true,
                   fillColor: const Color(0xFF4A5C6A).withOpacity(0.18),
                   prefixIcon: const Icon(
-                    Icons.search,
+                    Icons.search_outlined,
                     color: Color(0xFF4A5C6A),
                   ),
                 ),
               )
-            : const Text('Audio Browser'),
+            : Text(
+                'Audio Browser',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
         elevation: 0,
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
@@ -478,12 +448,12 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         actions: [
           if (_isSearching)
             IconButton(
-              icon: const Icon(Icons.close, color: Color(0xFF9BA8AB)),
+              icon: const Icon(Icons.close_outlined, color: Color(0xFF9BA8AB)),
               onPressed: _stopSearch,
             )
           else ...[
             IconButton(
-              icon: const Icon(Icons.search, color: Color(0xFF4A5C6A)),
+              icon: const Icon(Icons.search_outlined, color: Color(0xFF4A5C6A)),
               onPressed: _startSearch,
             ),
           ],
@@ -512,7 +482,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
             top: kToolbarHeight + MediaQuery.of(context).padding.top,
           ),
           child: _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SkeletonList(itemCount: 8)
               : Column(
                   children: [
                     Padding(
@@ -524,7 +494,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                         children: [
                           ElevatedButton.icon(
                             icon: const Icon(
-                              Icons.queue_music,
+                              Icons.queue_music_outlined,
                               color: Color(0xFF4A5C6A),
                             ),
                             label: const Text('Playlist'),
@@ -554,7 +524,9 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                           const SizedBox(width: 12),
                           ElevatedButton.icon(
                             icon: Icon(
-                              _showFolders ? Icons.list : Icons.folder,
+                              _showFolders
+                                  ? Icons.list_outlined
+                                  : Icons.folder_outlined,
                               color: const Color(0xFF4A5C6A),
                             ),
                             label: Text(_showFolders ? 'All Audio' : 'Folders'),
@@ -610,20 +582,27 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                                       final overlayColor = index % 2 == 0
                                           ? const Color(0xFF4A5C6A)
                                           : const Color(0xFF9BA8AB);
-                                      return MediaFileCard(
-                                        icon: Icons.folder,
-                                        title: folder
-                                            .split(Platform.pathSeparator)
-                                            .last,
-                                        subtitle:
-                                            '$count audio file${count == 1 ? '' : 's'}',
-                                        isFavourite: false,
+                                      return _AnimatedMediaFileCard(
+                                        child: MediaFileCard(
+                                          icon: Icons.folder_outlined,
+                                          title: folder
+                                              .split(Platform.pathSeparator)
+                                              .last,
+                                          subtitle:
+                                              '$count audio file${count == 1 ? '' : 's'}',
+                                          isFavourite: false,
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedFolder = folder;
+                                            });
+                                          },
+                                          overlayColor: overlayColor,
+                                        ),
                                         onTap: () {
                                           setState(() {
                                             _selectedFolder = folder;
                                           });
                                         },
-                                        overlayColor: overlayColor,
                                       );
                                     },
                                   )
@@ -631,7 +610,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                                     children: [
                                       ListTile(
                                         leading: const Icon(
-                                          Icons.arrow_back,
+                                          Icons.arrow_back_outlined,
                                           color: Colors.white,
                                         ),
                                         title: const Text(
@@ -661,51 +640,79 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                                             final overlayColor = index % 2 == 0
                                                 ? const Color(0xFF4A5C6A)
                                                 : const Color(0xFF9BA8AB);
-                                            return FutureBuilder<File?>(
-                                              future: asset.file,
-                                              builder: (context, snap) {
-                                                if (!snap.hasData) {
+                                            return _AnimatedMediaFileCard(
+                                              child: FutureBuilder<File?>(
+                                                future: asset.file,
+                                                builder: (context, snap) {
+                                                  if (!snap.hasData) {
+                                                    return MediaFileCard(
+                                                      icon: Icons
+                                                          .music_note_outlined,
+                                                      title: 'Loading...',
+                                                      isFavourite: false,
+                                                      onTap: () {},
+                                                      overlayColor:
+                                                          overlayColor,
+                                                    );
+                                                  }
+                                                  final file = snap.data!;
                                                   return MediaFileCard(
-                                                    icon: Icons.music_note,
-                                                    title: 'Loading...',
-                                                    isFavourite: false,
-                                                    onTap: () {},
+                                                    icon: Icons
+                                                        .music_note_outlined,
+                                                    title:
+                                                        asset.title ??
+                                                        file.path
+                                                            .split('/')
+                                                            .last,
+                                                    isFavourite: _favourites
+                                                        .contains(asset.id),
+                                                    onTap: () {
+                                                      final fullList =
+                                                          folderAudios;
+                                                      final initialIndex =
+                                                          fullList.indexWhere(
+                                                            (a) =>
+                                                                a.id ==
+                                                                asset.id,
+                                                          );
+                                                      if (initialIndex != -1) {
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (_) =>
+                                                                AudioPlayerScreen(
+                                                                  audios:
+                                                                      fullList,
+                                                                  initialIndex:
+                                                                      initialIndex,
+                                                                ),
+                                                          ),
+                                                        );
+                                                      }
+                                                    },
                                                     overlayColor: overlayColor,
                                                   );
+                                                },
+                                              ),
+                                              onTap: () {
+                                                final fullList = folderAudios;
+                                                final initialIndex = fullList
+                                                    .indexWhere(
+                                                      (a) => a.id == asset.id,
+                                                    );
+                                                if (initialIndex != -1) {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          AudioPlayerScreen(
+                                                            audios: fullList,
+                                                            initialIndex:
+                                                                initialIndex,
+                                                          ),
+                                                    ),
+                                                  );
                                                 }
-                                                final file = snap.data!;
-                                                return MediaFileCard(
-                                                  icon: Icons.music_note,
-                                                  title:
-                                                      asset.title ??
-                                                      file.path.split('/').last,
-                                                  isFavourite: _favourites
-                                                      .contains(asset.id),
-                                                  onTap: () {
-                                                    final fullList =
-                                                        folderAudios;
-                                                    final initialIndex =
-                                                        fullList.indexWhere(
-                                                          (a) =>
-                                                              a.id == asset.id,
-                                                        );
-                                                    if (initialIndex != -1) {
-                                                      Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                          builder: (_) =>
-                                                              AudioPlayerScreen(
-                                                                audios:
-                                                                    fullList,
-                                                                initialIndex:
-                                                                    initialIndex,
-                                                              ),
-                                                        ),
-                                                      );
-                                                    }
-                                                  },
-                                                  overlayColor: overlayColor,
-                                                );
                                               },
                                             );
                                           },
@@ -724,64 +731,82 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                                 ),
                               ),
                             )
-                          : GridView.builder(
+                          : ListView.builder(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
+                                horizontal: 12,
                                 vertical: 8,
                               ),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    childAspectRatio: 1.05,
-                                  ),
                               itemCount: audiosToShow.length,
                               itemBuilder: (context, index) {
                                 final asset = audiosToShow[index];
                                 final overlayColor = index % 2 == 0
                                     ? const Color(0xFF4A5C6A)
                                     : const Color(0xFF9BA8AB);
-                                return FutureBuilder<File?>(
-                                  future: asset.file,
-                                  builder: (context, snap) {
-                                    if (!snap.hasData) {
-                                      return MediaFileCard(
-                                        icon: Icons.music_note,
-                                        title: 'Loading...',
-                                        isFavourite: false,
-                                        onTap: () {},
-                                        overlayColor: overlayColor,
-                                      );
-                                    }
-                                    final file = snap.data!;
-                                    return MediaFileCard(
-                                      icon: Icons.music_note,
-                                      title:
-                                          asset.title ??
-                                          file.path.split('/').last,
-                                      isFavourite: _favourites.contains(
-                                        asset.id,
-                                      ),
-                                      onTap: () {
-                                        final fullList = audiosToShow;
-                                        final initialIndex = fullList
-                                            .indexWhere(
-                                              (a) => a.id == asset.id,
-                                            );
-                                        if (initialIndex != -1) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => AudioPlayerScreen(
-                                                audios: fullList,
-                                                initialIndex: initialIndex,
-                                              ),
-                                            ),
-                                          );
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 6,
+                                  ),
+                                  child: _AnimatedMediaFileCard(
+                                    child: FutureBuilder<File?>(
+                                      future: asset.file,
+                                      builder: (context, snapshot) {
+                                        String title = asset.title ?? 'Unknown';
+                                        if (snapshot.hasData &&
+                                            snapshot.data != null) {
+                                          title =
+                                              asset.title ??
+                                              snapshot.data!.path
+                                                  .split('/')
+                                                  .last;
                                         }
+                                        return MediaFileCard(
+                                          icon: Icons.music_note_outlined,
+                                          title: title,
+                                          isFavourite: _favourites.contains(
+                                            asset.id,
+                                          ),
+                                          onTap: () {
+                                            final fullList = audiosToShow;
+                                            final initialIndex = fullList
+                                                .indexWhere(
+                                                  (a) => a.id == asset.id,
+                                                );
+                                            if (initialIndex != -1) {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      AudioPlayerScreen(
+                                                        audios: fullList,
+                                                        initialIndex:
+                                                            initialIndex,
+                                                      ),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          overlayColor: overlayColor,
+                                        );
                                       },
-                                      overlayColor: overlayColor,
-                                    );
-                                  },
+                                    ),
+                                    onTap: () {
+                                      final fullList = audiosToShow;
+                                      final initialIndex = fullList.indexWhere(
+                                        (a) => a.id == asset.id,
+                                      );
+                                      if (initialIndex != -1) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => AudioPlayerScreen(
+                                              audios: fullList,
+                                              initialIndex: initialIndex,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
                                 );
                               },
                             ),

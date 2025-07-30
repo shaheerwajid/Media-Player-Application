@@ -74,8 +74,13 @@ class VideoControlsOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!showControls && !isLocked) {
+      return const SizedBox.shrink();
+    }
+
     return Stack(
       children: [
+        // Status overlays
         if (showSeekOverlay && isPlayerInitialized)
           StatusOverlays.seek(context: context, offset: seekOffsetSeconds),
         if (showVolumeOverlay)
@@ -85,6 +90,7 @@ class VideoControlsOverlay extends StatelessWidget {
         if (aspectModeOverlayText != null)
           StatusOverlays.aspectRatio(context, aspectModeOverlayText!),
 
+        // Lock button
         if (isLocked)
           Positioned(
             top: 32,
@@ -96,60 +102,47 @@ class VideoControlsOverlay extends StatelessWidget {
             ),
           ),
 
+        // Controls overlay
         if (!isLocked) ...[
-          // Top controls at the top
+          // Top controls
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: AnimatedOpacity(
+            child: Opacity(
               opacity: showControls ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              onEnd: startHideTimer,
-              child: Visibility(
-                visible: showControls,
-                maintainState: true,
-                child: TopControls(
-                  onMoreOptions: onMoreOptions,
-                  toggleOrientation: toggleOrientation,
-                  isLandscape: isLandscape,
-                  onEnablePiP: onEnablePiP,
-                  onSwitchToAudio: onSwitchToAudio,
-                  toggleLock: toggleLock,
-                  cycleAspectMode: cycleAspectMode,
-                ),
+              child: TopControls(
+                onMoreOptions: onMoreOptions,
+                toggleOrientation: toggleOrientation,
+                isLandscape: isLandscape,
+                onEnablePiP: onEnablePiP,
+                onSwitchToAudio: onSwitchToAudio,
+                toggleLock: toggleLock,
+                cycleAspectMode: cycleAspectMode,
               ),
             ),
           ),
-          // Bottom controls at the bottom
+          // Bottom controls
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: AnimatedOpacity(
+            child: Opacity(
               opacity: showControls ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              onEnd: startHideTimer,
-              child: Visibility(
-                visible: showControls,
-                maintainState: true,
-                child: BottomControls(
-                  player: player,
-                  isPlayerInitialized: isPlayerInitialized,
-                  onCaptureScreenshot: onCaptureScreenshot,
-                  onMute: onMute,
-                  isMuted: isMuted,
-                  onPlayPrevious: onPlayPrevious,
-                  canPlayPrevious: canPlayPrevious,
-                  onPlayNext: onPlayNext,
-                  canPlayNext: canPlayNext,
-                  formatDuration: formatDuration,
-                  startHideTimer: startHideTimer,
-                  bookmarks: bookmarks,
-                  onBookmarkTap: onBookmarkTap,
-                ),
+              child: BottomControls(
+                player: player,
+                isPlayerInitialized: isPlayerInitialized,
+                onCaptureScreenshot: onCaptureScreenshot,
+                onMute: onMute,
+                isMuted: isMuted,
+                onPlayPrevious: onPlayPrevious,
+                canPlayPrevious: canPlayPrevious,
+                onPlayNext: onPlayNext,
+                canPlayNext: canPlayNext,
+                formatDuration: formatDuration,
+                startHideTimer: startHideTimer,
+                bookmarks: bookmarks,
+                onBookmarkTap: onBookmarkTap,
               ),
             ),
           ),

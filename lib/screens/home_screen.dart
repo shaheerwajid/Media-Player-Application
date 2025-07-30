@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import 'dart:ui';
+import '../widgets/skeleton_media_card.dart';
 
 class MediaFileCard extends StatefulWidget {
   final Widget? thumbnail;
@@ -173,10 +174,8 @@ class _MediaFileCardState extends State<MediaFileCard>
                       widget.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFCCD0CF),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 15,
                       ),
                     ),
                     if (widget.subtitle != null) ...[
@@ -185,10 +184,7 @@ class _MediaFileCardState extends State<MediaFileCard>
                         widget.subtitle!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF9BA8AB),
-                          fontSize: 12,
-                        ),
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
                   ],
@@ -209,9 +205,7 @@ class _MediaFileCardState extends State<MediaFileCard>
                     ),
                     child: Text(
                       widget.duration!,
-                      style: const TextStyle(
-                        color: Color(0xFFCCD0CF),
-                        fontSize: 11,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -220,6 +214,38 @@ class _MediaFileCardState extends State<MediaFileCard>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// For MediaFileCard and ListTile, create a _AnimatedMediaFileCard StatefulWidget:
+class _AnimatedMediaFileCard extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  final double borderRadius;
+  const _AnimatedMediaFileCard({
+    required this.child,
+    required this.onTap,
+    this.borderRadius = 28,
+    Key? key,
+  }) : super(key: key);
+  @override
+  State<_AnimatedMediaFileCard> createState() => _AnimatedMediaFileCardState();
+}
+
+class _AnimatedMediaFileCardState extends State<_AnimatedMediaFileCard> {
+  bool _isPressed = false;
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _isPressed ? 0.96 : 1.0,
+      duration: const Duration(milliseconds: 120),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        onTap: widget.onTap,
+        onHighlightChanged: (v) => setState(() => _isPressed = v),
+        child: widget.child,
       ),
     );
   }
@@ -389,11 +415,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: const TextStyle(color: Color(0xFFCCD0CF)),
+                style: Theme.of(context).textTheme.bodyLarge,
                 decoration: InputDecoration(
                   hintText: 'Search videos...',
                   border: InputBorder.none,
-                  hintStyle: const TextStyle(color: Color(0xFF9BA8AB)),
+                  hintStyle: Theme.of(context).textTheme.bodyMedium,
                   filled: true,
                   fillColor: const Color(0xFF4A5C6A).withOpacity(0.18),
                   prefixIcon: const Icon(
@@ -402,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                   ),
                 ),
               )
-            : const Text('Videos'),
+            : Text('Videos', style: Theme.of(context).textTheme.titleLarge),
         elevation: 0,
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
@@ -446,7 +472,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             top: kToolbarHeight + MediaQuery.of(context).padding.top,
           ),
           child: _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SkeletonList(itemCount: 8)
               : Column(
                   children: [
                     if (_showFolders)
@@ -470,39 +496,96 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                               final overlayColor = index % 2 == 0
                                   ? const Color(0xFF4A5C6A)
                                   : const Color(0xFF9BA8AB);
-                              return MediaFileCard(
-                                icon: Icons.folder,
-                                title: folder
-                                    .split(Platform.pathSeparator)
-                                    .last,
-                                subtitle:
-                                    '$count video${count == 1 ? '' : 's'}',
-                                isFavourite: false,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedFolder = folder;
-                                  });
-                                },
-                                overlayColor: overlayColor,
+                              return TweenAnimationBuilder(
+                                tween: Tween<Offset>(
+                                  begin: const Offset(0, 0.12),
+                                  end: Offset.zero,
+                                ),
+                                duration: const Duration(milliseconds: 400),
+                                curve: Curves.easeOut,
+                                builder: (context, offset, child) =>
+                                    AnimatedOpacity(
+                                      opacity: 1.0,
+                                      duration: const Duration(
+                                        milliseconds: 400,
+                                      ),
+                                      curve: Curves.easeOut,
+                                      child: AnimatedSlide(
+                                        offset: offset,
+                                        duration: const Duration(
+                                          milliseconds: 400,
+                                        ),
+                                        curve: Curves.easeOut,
+                                        child: _AnimatedMediaFileCard(
+                                          child: MediaFileCard(
+                                            icon: Icons.folder_outlined,
+                                            title: folder
+                                                .split(Platform.pathSeparator)
+                                                .last,
+                                            subtitle:
+                                                '$count video${count == 1 ? '' : 's'}',
+                                            isFavourite: false,
+                                            onTap: () {
+                                              setState(() {
+                                                _selectedFolder = folder;
+                                              });
+                                            },
+                                            overlayColor: overlayColor,
+                                          ),
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedFolder = folder;
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                    ),
                               );
                             },
                           ),
                         )
                       else ...[
-                        ListTile(
-                          leading: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
+                        TweenAnimationBuilder(
+                          tween: Tween<Offset>(
+                            begin: const Offset(0, 0.12),
+                            end: Offset.zero,
                           ),
-                          title: const Text(
-                            'Back to Folders',
-                            style: TextStyle(color: Colors.white),
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOut,
+                          builder: (context, offset, child) => AnimatedOpacity(
+                            opacity: 1.0,
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.easeOut,
+                            child: AnimatedSlide(
+                              offset: offset,
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeOut,
+                              child: _AnimatedMediaFileCard(
+                                child: ListTile(
+                                  leading: const Icon(
+                                    Icons.arrow_back_outlined,
+                                    color: Colors.white,
+                                  ),
+                                  title: Text(
+                                    'Back to Folders',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyLarge,
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedFolder = null;
+                                    });
+                                  },
+                                ),
+                                onTap: () {
+                                  setState(() {
+                                    _selectedFolder = null;
+                                  });
+                                },
+                              ),
+                            ),
                           ),
-                          onTap: () {
-                            setState(() {
-                              _selectedFolder = null;
-                            });
-                          },
                         ),
                         Expanded(
                           child: GridView.builder(
@@ -521,159 +604,104 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                               final overlayColor = index % 2 == 0
                                   ? const Color(0xFF4A5C6A)
                                   : const Color(0xFF9BA8AB);
-                              return FutureBuilder<File?>(
-                                future: asset.file,
-                                builder: (context, snapshot) {
-                                  if (!snapshot.hasData) {
-                                    return MediaFileCard(
-                                      icon: Icons.movie,
-                                      title: 'Loading...',
-                                      isFavourite: false,
-                                      onTap: () {},
-                                      overlayColor: overlayColor,
-                                    );
-                                  }
-                                  final file = snapshot.data!;
-                                  return FutureBuilder<Uint8List?>(
-                                    future: asset.thumbnailDataWithSize(
-                                      ThumbnailSize(80, 80),
-                                    ),
-                                    builder: (context, thumbSnapshot) {
-                                      Widget? thumbWidget;
-                                      if (thumbSnapshot.connectionState ==
-                                              ConnectionState.done &&
-                                          thumbSnapshot.hasData &&
-                                          thumbSnapshot.data != null) {
-                                        thumbWidget = ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                          child: Image.memory(
-                                            thumbSnapshot.data!,
-                                            width: 44,
-                                            height: 44,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        );
-                                      }
-                                      return MediaFileCard(
-                                        thumbnail: thumbWidget,
-                                        title:
-                                            asset.title ??
-                                            file.path
-                                                .split(Platform.pathSeparator)
-                                                .last,
-                                        isFavourite: _favourites.contains(
-                                          asset.id,
-                                        ),
-                                        onTap: () async {
-                                          final fullList = folderVideos;
-                                          final initialIndex = fullList
-                                              .indexWhere(
-                                                (a) => a.id == asset.id,
-                                              );
-                                          if (initialIndex != -1) {
-                                            final result =
-                                                await Navigator.of(
-                                                  context,
-                                                ).push(
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        VideoPlayerScreen(
-                                                          videoAssets: fullList,
-                                                          initialIndex:
-                                                              initialIndex,
-                                                        ),
+                              return TweenAnimationBuilder(
+                                tween: Tween<Offset>(
+                                  begin: const Offset(0, 0.12),
+                                  end: Offset.zero,
+                                ),
+                                duration: const Duration(milliseconds: 400),
+                                curve: Curves.easeOut,
+                                builder: (context, offset, child) => AnimatedOpacity(
+                                  opacity: 1.0,
+                                  duration: const Duration(milliseconds: 400),
+                                  curve: Curves.easeOut,
+                                  child: AnimatedSlide(
+                                    offset: offset,
+                                    duration: const Duration(milliseconds: 400),
+                                    curve: Curves.easeOut,
+                                    child: _AnimatedMediaFileCard(
+                                      child: FutureBuilder<File?>(
+                                        future: asset.file,
+                                        builder: (context, snapshot) {
+                                          if (!snapshot.hasData) {
+                                            return MediaFileCard(
+                                              icon: Icons.movie_outlined,
+                                              title: 'Loading...',
+                                              isFavourite: false,
+                                              onTap: () {},
+                                              overlayColor: overlayColor,
+                                            );
+                                          }
+                                          final file = snapshot.data!;
+                                          return FutureBuilder<Uint8List?>(
+                                            future: asset.thumbnailDataWithSize(
+                                              ThumbnailSize(80, 80),
+                                            ),
+                                            builder: (context, thumbSnapshot) {
+                                              Widget? thumbWidget;
+                                              if (thumbSnapshot
+                                                          .connectionState ==
+                                                      ConnectionState.done &&
+                                                  thumbSnapshot.hasData &&
+                                                  thumbSnapshot.data != null) {
+                                                thumbWidget = ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  child: Image.memory(
+                                                    thumbSnapshot.data!,
+                                                    width: 44,
+                                                    height: 44,
+                                                    fit: BoxFit.cover,
                                                   ),
                                                 );
-                                            if (result == true) {
-                                              _loadFavourites();
-                                              setState(() {});
-                                            }
-                                          }
+                                              }
+                                              return MediaFileCard(
+                                                thumbnail: thumbWidget,
+                                                title:
+                                                    asset.title ??
+                                                    file.path
+                                                        .split(
+                                                          Platform
+                                                              .pathSeparator,
+                                                        )
+                                                        .last,
+                                                isFavourite: _favourites
+                                                    .contains(asset.id),
+                                                onTap: () async {
+                                                  final fullList = folderVideos;
+                                                  final initialIndex = fullList
+                                                      .indexWhere(
+                                                        (a) => a.id == asset.id,
+                                                      );
+                                                  if (initialIndex != -1) {
+                                                    final result =
+                                                        await Navigator.of(
+                                                          context,
+                                                        ).push(
+                                                          MaterialPageRoute(
+                                                            builder: (_) =>
+                                                                VideoPlayerScreen(
+                                                                  videoAssets:
+                                                                      fullList,
+                                                                  initialIndex:
+                                                                      initialIndex,
+                                                                ),
+                                                          ),
+                                                        );
+                                                    if (result == true) {
+                                                      _loadFavourites();
+                                                      setState(() {});
+                                                    }
+                                                  }
+                                                },
+                                                overlayColor: overlayColor,
+                                              );
+                                            },
+                                          );
                                         },
-                                        overlayColor: overlayColor,
-                                      );
-                                    },
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      ]
-                    else if (videosToShow.isEmpty)
-                      const Expanded(
-                        child: Center(
-                          child: Text(
-                            'No videos found.',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      )
-                    else
-                      Expanded(
-                        child: GridView.builder(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 8,
-                          ),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 0.95,
-                              ),
-                          itemCount: videosToShow.length,
-                          itemBuilder: (context, index) {
-                            final asset = videosToShow[index];
-                            final overlayColor = index % 2 == 0
-                                ? const Color(0xFF4A5C6A)
-                                : const Color(0xFF9BA8AB);
-                            return FutureBuilder<File?>(
-                              future: asset.file,
-                              builder: (context, snapshot) {
-                                if (!snapshot.hasData) {
-                                  return MediaFileCard(
-                                    icon: Icons.movie,
-                                    title: 'Loading...',
-                                    isFavourite: false,
-                                    onTap: () {},
-                                    overlayColor: overlayColor,
-                                  );
-                                }
-                                final file = snapshot.data!;
-                                return FutureBuilder<Uint8List?>(
-                                  future: asset.thumbnailDataWithSize(
-                                    ThumbnailSize(80, 80),
-                                  ),
-                                  builder: (context, thumbSnapshot) {
-                                    Widget? thumbWidget;
-                                    if (thumbSnapshot.connectionState ==
-                                            ConnectionState.done &&
-                                        thumbSnapshot.hasData &&
-                                        thumbSnapshot.data != null) {
-                                      thumbWidget = ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Image.memory(
-                                          thumbSnapshot.data!,
-                                          width: 56,
-                                          height: 56,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      );
-                                    }
-                                    return MediaFileCard(
-                                      thumbnail: thumbWidget,
-                                      title:
-                                          asset.title ??
-                                          file.path
-                                              .split(Platform.pathSeparator)
-                                              .last,
-                                      isFavourite: _favourites.contains(
-                                        asset.id,
                                       ),
                                       onTap: () async {
-                                        final fullList = _videoAssets;
+                                        final fullList = folderVideos;
                                         final initialIndex = fullList
                                             .indexWhere(
                                               (a) => a.id == asset.id,
@@ -696,11 +724,211 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                                           }
                                         }
                                       },
-                                      overlayColor: overlayColor,
-                                    );
-                                  },
-                                );
-                              },
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ]
+                    else if (videosToShow.isEmpty)
+                      const Expanded(
+                        child: Center(
+                          child: Text(
+                            'No videos found.',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          itemCount: videosToShow.length,
+                          itemBuilder: (context, index) {
+                            final asset = videosToShow[index];
+                            final overlayColor = index % 2 == 0
+                                ? const Color(0xFF4A5C6A)
+                                : const Color(0xFF9BA8AB);
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: _AnimatedMediaFileCard(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(28),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 18,
+                                      sigmaY: 18,
+                                    ),
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(
+                                        vertical: 0,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 18,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(28),
+                                        color: Colors.white.withOpacity(0.13),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(
+                                              0xFF06141B,
+                                            ).withOpacity(0.18),
+                                            blurRadius: 18,
+                                            offset: const Offset(0, 6),
+                                          ),
+                                        ],
+                                        border: Border.all(
+                                          width: 1.2,
+                                          style: BorderStyle.solid,
+                                          color: Colors.white.withOpacity(0.18),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          // Thumbnail
+                                          FutureBuilder<Uint8List?>(
+                                            future: asset.thumbnailDataWithSize(
+                                              ThumbnailSize(64, 64),
+                                            ),
+                                            builder: (context, snapshot) {
+                                              Widget thumbWidget;
+                                              if (snapshot.connectionState ==
+                                                      ConnectionState.done &&
+                                                  snapshot.hasData &&
+                                                  snapshot.data != null) {
+                                                thumbWidget = ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  child: Image.memory(
+                                                    snapshot.data!,
+                                                    width: 64,
+                                                    height: 64,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                );
+                                              } else {
+                                                thumbWidget = Icon(
+                                                  Icons.movie_outlined,
+                                                  size: 32,
+                                                  color: const Color(
+                                                    0xFFCCD0CF,
+                                                  ),
+                                                );
+                                              }
+                                              return Container(
+                                                width: 64,
+                                                height: 64,
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  color: Colors.white
+                                                      .withOpacity(0.18),
+                                                ),
+                                                child: thumbWidget,
+                                              );
+                                            },
+                                          ),
+                                          const SizedBox(width: 16),
+                                          // Details
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  asset.title ?? 'Unknown',
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyLarge
+                                                      ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                ),
+                                                // Optionally add subtitle or other details here
+                                              ],
+                                            ),
+                                          ),
+                                          // Favourite icon (top right)
+                                          Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                            children: [
+                                              AnimatedSwitcher(
+                                                duration: const Duration(
+                                                  milliseconds: 200,
+                                                ),
+                                                transitionBuilder:
+                                                    (child, animation) =>
+                                                        ScaleTransition(
+                                                          scale: animation,
+                                                          child: child,
+                                                        ),
+                                                child:
+                                                    _favourites.contains(
+                                                      asset.id,
+                                                    )
+                                                    ? Icon(
+                                                        Icons.star_outlined,
+                                                        key: const ValueKey(
+                                                          'favorite',
+                                                        ),
+                                                        color: const Color(
+                                                          0xFFCCD0CF,
+                                                        ),
+                                                        size: 24,
+                                                      )
+                                                    : const SizedBox(
+                                                        width: 24,
+                                                        height: 24,
+                                                        key: ValueKey(
+                                                          'not_favorite',
+                                                        ),
+                                                      ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                onTap: () async {
+                                  final fullList = _videoAssets;
+                                  final initialIndex = fullList.indexWhere(
+                                    (a) => a.id == asset.id,
+                                  );
+                                  if (initialIndex != -1) {
+                                    final result = await Navigator.of(context)
+                                        .push(
+                                          MaterialPageRoute(
+                                            builder: (_) => VideoPlayerScreen(
+                                              videoAssets: fullList,
+                                              initialIndex: initialIndex,
+                                            ),
+                                          ),
+                                        );
+                                    if (result == true) {
+                                      _loadFavourites();
+                                      setState(() {});
+                                    }
+                                  }
+                                },
+                              ),
                             );
                           },
                         ),

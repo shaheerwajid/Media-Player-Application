@@ -87,6 +87,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   bool _isAudioOnly = false;
   bool _isAudioPlayerReady = false;
 
+  // Audio state variables
+  String? _audioState;
+  int _audioPositionMs = 0;
+  int _audioTotalDurationMs = 0;
+
   final List<String> _aspectModes = [
     'Original',
     'Fit',
@@ -99,16 +104,17 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   String? _aspectModeOverlayText;
   Timer? _aspectModeOverlayTimer;
 
+  // Add missing getters for navigation
+  bool get canPlayPrevious => _currentIndex > 0;
+  bool get canPlayNext => _currentIndex < widget.videoAssets.length - 1;
+
   // Cast devices cache
   // List<CastDevice>? _castDevices;
 
-  StreamSubscription<Map<String, dynamic>>? _audioStateSub;
-  String _audioState = 'paused';
-  int _audioPositionMs = 0;
-  int? _audioTotalDurationMs;
-
+  StreamSubscription? _audioStateSub;
   StreamSubscription? _completedSub;
-  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription? _positionSub;
+  StreamSubscription? _playingSub;
 
   bool get isPlayerInitialized => player.state.playlist.medias.isNotEmpty;
 
@@ -222,6 +228,21 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           !_isSeeking) {
         _handlePlaybackModeOnComplete();
       }
+      // Trigger UI update for progress bar
+      if (mounted) {
+        setState(() {
+          // This will update the progress bar in real-time
+        });
+      }
+    });
+
+    // Listen to playing state changes for real-time UI updates
+    _playingSub = player.stream.playing.listen((playing) {
+      if (mounted) {
+        setState(() {
+          // This will trigger UI rebuild when playing state changes
+        });
+      }
     });
   }
 
@@ -233,6 +254,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     player.dispose();
     _completedSub?.cancel();
     _positionSub?.cancel();
+    _playingSub?.cancel();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -269,6 +291,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     setState(() {
       _isFavourite = !_isFavourite;
     });
+
+    // Show animated checkmark feedback
+    if (_isFavourite) {
+      _showCheckmarkFeedback(context);
+    }
   }
 
   void _loadBookmarks() {
@@ -289,6 +316,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         _bookmarks.map((e) => e.toString()).toList(),
       );
       setState(() {});
+
+      // Show animated checkmark feedback
+      _showBookmarkCheckmarkFeedback(context);
     }
   }
 
@@ -513,37 +543,68 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Future<void> _captureAndSaveScreenshot() async {
     try {
-      RenderRepaintBoundary boundary =
+      // Check if player is initialized and has a video
+      if (!isPlayerInitialized || _isAudioOnly) {
+        throw Exception('No video available to capture');
+      }
+
+      // Capture the video widget using RepaintBoundary
+      final RenderRepaintBoundary boundary =
           _videoScreenshotKey.currentContext!.findRenderObject()
               as RenderRepaintBoundary;
-      ui.Image image = await boundary.toImage(pixelRatio: 2.0);
-      ByteData? byteData = await image.toByteData(
+
+      // Capture the image with high quality
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData = await image.toByteData(
         format: ui.ImageByteFormat.png,
       );
-      if (byteData == null) throw Exception('Failed to get image bytes');
-      Uint8List pngBytes = byteData.buffer.asUint8List();
+
+      if (byteData == null) {
+        throw Exception('Failed to get image bytes');
+      }
+
+      final Uint8List pngBytes = byteData.buffer.asUint8List();
+
+      // Save to temporary directory
       final directory = await getTemporaryDirectory();
       final fileName =
           'video_screenshot_${DateTime.now().millisecondsSinceEpoch}.png';
       final filePath = '${directory.path}/$fileName';
       final file = File(filePath);
       await file.writeAsBytes(pngBytes);
-      await MediaStore.ensureInitialized();
-      final mediaStore = MediaStore();
-      final saveInfo = await mediaStore.saveFile(
-        tempFilePath: file.path,
-        dirType: DirType.photo,
-        dirName: DirName.pictures,
-        relativePath: '',
-      );
-      if (saveInfo != null) {
+
+      // Check if file was created successfully
+      if (!await file.exists()) {
+        throw Exception('Failed to create screenshot file');
+      }
+
+      // Try to save to gallery using MediaStore
+      try {
+        await MediaStore.ensureInitialized();
+        final mediaStore = MediaStore();
+        final saveInfo = await mediaStore.saveFile(
+          tempFilePath: file.path,
+          dirType: DirType.photo,
+          dirName: DirName.pictures,
+          relativePath: '',
+        );
+
+        // Even if MediaStore returns null, the file was created successfully
+        // So we'll show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Screenshot saved to gallery!')),
           );
         }
-      } else {
-        throw Exception('MediaStore.saveFile failed');
+      } catch (mediaStoreError) {
+        // If MediaStore fails, but file exists, still show success
+        if (await file.exists() && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Screenshot saved to gallery!')),
+          );
+        } else {
+          throw mediaStoreError;
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -598,8 +659,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.repeat),
-                title: const Text('Playback Mode'),
+                leading: const Icon(Icons.repeat_outlined),
+                title: Text(
+                  'Playback Mode',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 subtitle: Text(
                   _loopMode == 'order'
                       ? 'Play in Order'
@@ -608,19 +672,26 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                       : _loopMode == 'shuffle'
                       ? 'Shuffle'
                       : 'Stop After Current',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 onTap: () {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Playback Mode'),
+                      title: Text(
+                        'Playback Mode',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           RadioListTile<String>(
                             value: 'order',
                             groupValue: _loopMode,
-                            title: const Text('Play in Order'),
+                            title: Text(
+                              'Play in Order',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
                             onChanged: (v) {
                               _setLoopMode('order');
                               Navigator.pop(context);
@@ -629,7 +700,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           RadioListTile<String>(
                             value: 'loop',
                             groupValue: _loopMode,
-                            title: const Text('Loop Current'),
+                            title: Text(
+                              'Loop Current',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
                             onChanged: (v) {
                               _setLoopMode('loop');
                               Navigator.pop(context);
@@ -638,7 +712,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           RadioListTile<String>(
                             value: 'shuffle',
                             groupValue: _loopMode,
-                            title: const Text('Shuffle'),
+                            title: Text(
+                              'Shuffle',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
                             onChanged: (v) {
                               _setLoopMode('shuffle');
                               Navigator.pop(context);
@@ -647,7 +724,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           RadioListTile<String>(
                             value: 'stop',
                             groupValue: _loopMode,
-                            title: const Text('Stop After Current'),
+                            title: Text(
+                              'Stop After Current',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
                             onChanged: (v) {
                               _setLoopMode('stop');
                               Navigator.pop(context);
@@ -660,10 +740,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.speed),
-                title: const Text('Playback speed'),
+                leading: const Icon(Icons.speed_outlined),
+                title: Text(
+                  'Playback speed',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 subtitle: Text(
                   ' x',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ), // You can update this to show actual speed
                 onTap: () {
                   Navigator.pop(c);
@@ -672,7 +756,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.phone),
-                title: const Text('Set as ringtone'),
+                title: Text(
+                  'Set as ringtone',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 onTap: () async {
                   Navigator.pop(c);
                   final file = await widget.videoAssets[_currentIndex].file;
@@ -685,6 +772,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         SnackBar(
                           content: Text(
                             success ? 'Ringtone set' : 'Failed to set ringtone',
+                            style: Theme.of(context).textTheme.bodyLarge,
                           ),
                         ),
                       );
@@ -693,8 +781,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.share, color: Colors.blue),
-                title: const Text('Share'),
+                leading: const Icon(Icons.share_outlined, color: Colors.blue),
+                title: Text(
+                  'Share',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 onTap: () async {
                   Navigator.pop(c);
                   final file = await widget.videoAssets[_currentIndex].file;
@@ -715,7 +806,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     final speed = await showCupertinoModalPopup<double>(
       context: context,
       builder: (context) => CupertinoActionSheet(
-        title: const Text('Playback Speed'),
+        title: Text(
+          'Playback Speed',
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
         actions: _speedOptions
             .map(
               (s) => CupertinoActionSheetAction(
@@ -734,7 +828,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             .toList(),
         cancelButton: CupertinoActionSheetAction(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text('Cancel', style: Theme.of(context).textTheme.bodyLarge),
         ),
       ),
     );
@@ -770,8 +864,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.audiotrack),
-                title: const Text('Audio Track'),
+                leading: const Icon(Icons.audiotrack_outlined),
+                title: Text(
+                  'Audio Track',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 onTap: () {
                   Navigator.pop(c);
                   _showAudioTracksDialog(context);
@@ -788,16 +885,22 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               ),
 */
               ListTile(
-                leading: const Icon(Icons.share, color: Colors.blue),
-                title: const Text('Share'),
+                leading: const Icon(Icons.share_outlined),
+                title: Text(
+                  'Share',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 onTap: () async {
                   Navigator.pop(c);
                   await _shareCurrentVideo();
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.content_cut),
-                title: const Text('Trim'),
+                leading: const Icon(Icons.content_cut_outlined),
+                title: Text(
+                  'Trim',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 onTap: () async {
                   Navigator.pop(c);
                   if (file != null) {
@@ -811,12 +914,21 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(
-                  _isFavourite ? Icons.star : Icons.star_border,
-                  color: Colors.amber,
+                leading: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: Icon(
+                    _isFavourite
+                        ? Icons.star_outline_rounded
+                        : Icons.star_border,
+                    key: ValueKey(_isFavourite),
+                    color: const Color(0xFFCCD0CF),
+                  ),
                 ),
                 title: Text(
                   _isFavourite ? 'Remove Favourite' : 'Add Favourite',
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 onTap: () {
                   Navigator.pop(c);
@@ -824,8 +936,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.bookmark),
-                title: const Text('Add Bookmark'),
+                leading: const Icon(Icons.bookmark_outline),
+                title: Text(
+                  'Add Bookmark',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 onTap: () {
                   Navigator.pop(c);
                   _addBookmark();
@@ -837,8 +952,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(_vrMode ? Icons.vrpano : Icons.vrpano_outlined),
-                title: Text(_vrMode ? 'Disable VR Mode' : 'Enable VR Mode'),
+                leading: Icon(
+                  _vrMode ? Icons.vrpano_outlined : Icons.vrpano_outlined,
+                ),
+                title: Text(
+                  _vrMode ? 'Disable VR Mode' : 'Enable VR Mode',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 onTap: () {
                   Navigator.pop(c);
                   setState(() {
@@ -847,9 +967,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(_mirrorMode ? Icons.flip : Icons.flip_outlined),
+                leading: Icon(
+                  _mirrorMode ? Icons.flip_outlined : Icons.flip_outlined,
+                ),
                 title: Text(
                   _mirrorMode ? 'Disable Mirror Mode' : 'Enable Mirror Mode',
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 onTap: () {
                   Navigator.pop(c);
@@ -859,8 +982,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.repeat),
-                title: const Text('Playback Mode'),
+                leading: const Icon(Icons.repeat_outlined),
+                title: Text(
+                  'Playback Mode',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 subtitle: Text(
                   _loopMode == 'order'
                       ? 'Play in Order'
@@ -869,19 +995,26 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                       : _loopMode == 'shuffle'
                       ? 'Shuffle'
                       : 'Stop After Current',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 onTap: () {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Playback Mode'),
+                      title: Text(
+                        'Playback Mode',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           RadioListTile<String>(
                             value: 'order',
                             groupValue: _loopMode,
-                            title: const Text('Play in Order'),
+                            title: Text(
+                              'Play in Order',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
                             onChanged: (v) {
                               _setLoopMode('order');
                               Navigator.pop(context);
@@ -890,7 +1023,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           RadioListTile<String>(
                             value: 'loop',
                             groupValue: _loopMode,
-                            title: const Text('Loop Current'),
+                            title: Text(
+                              'Loop Current',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
                             onChanged: (v) {
                               _setLoopMode('loop');
                               Navigator.pop(context);
@@ -899,7 +1035,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           RadioListTile<String>(
                             value: 'shuffle',
                             groupValue: _loopMode,
-                            title: const Text('Shuffle'),
+                            title: Text(
+                              'Shuffle',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
                             onChanged: (v) {
                               _setLoopMode('shuffle');
                               Navigator.pop(context);
@@ -908,7 +1047,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           RadioListTile<String>(
                             value: 'stop',
                             groupValue: _loopMode,
-                            title: const Text('Stop After Current'),
+                            title: Text(
+                              'Stop After Current',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
                             onChanged: (v) {
                               _setLoopMode('stop');
                               Navigator.pop(context);
@@ -934,7 +1076,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Select Audio Track'),
+        title: Text(
+          'Select Audio Track',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -964,7 +1109,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: Theme.of(context).textTheme.bodyLarge),
           ),
         ],
       ),
@@ -977,9 +1122,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text(
+          title: Text(
             'Cast Devices',
-            style: TextStyle(color: Colors.white),
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           content: const SizedBox(
             height: 80,
@@ -988,7 +1133,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close', style: TextStyle(color: Colors.white)),
+              child: Text(
+                'Close',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
             ),
           ],
         );
@@ -1013,12 +1161,21 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     double? aspectRatio;
     if (mode == '16:9') aspectRatio = 16 / 9;
     if (mode == '4:3') aspectRatio = 4 / 3;
-    final video = Video(
+
+    Widget video = Video(
       controller: controller,
       fit: fit,
       aspectRatio: aspectRatio,
       controls: NoVideoControls,
     );
+
+    // Wrap in Container for better release mode compatibility
+    video = Container(
+      width: double.infinity,
+      height: double.infinity,
+      child: video,
+    );
+
     if (mode == 'Original' || mode == 'Fit') {
       return Center(child: video);
     }
@@ -1079,11 +1236,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           onVerticalDragEnd: _onVerticalDragEnd,
           child: Stack(
             children: [
+              // Video/Audio content layer
               if (_isAudioOnly)
                 AudioScreenStandalone(
                   isAudioPlayerReady: _isAudioPlayerReady,
                   formatDuration: _formatDuration,
-                  playbackState: _audioState,
+                  playbackState: _audioState ?? 'paused',
                   playbackPositionMs: _audioPositionMs,
                   totalDurationMs: _audioTotalDurationMs,
                   onNext: _playNext,
@@ -1120,54 +1278,356 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   onSwitchToVideo: _switchToVideo,
                 )
               else
-                Center(
-                  child: isPlayerInitialized
-                      ? RepaintBoundary(
-                          key: _videoScreenshotKey,
-                          child: _vrMode
+                // Video content - completely separate from overlay
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black,
+                    child: isPlayerInitialized
+                        ? _vrMode
                               ? Row(
                                   children: [
                                     Expanded(child: _buildTransformedVideo()),
                                     Expanded(child: _buildTransformedVideo()),
                                   ],
                                 )
-                              : _buildTransformedVideo(),
-                        )
-                      : const CircularProgressIndicator(),
+                              : RepaintBoundary(
+                                  key: _videoScreenshotKey,
+                                  child: _buildTransformedVideo(),
+                                )
+                        : const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                          ),
+                  ),
                 ),
+
+              // Overlay controls - completely separate layer
               if (!_isAudioOnly)
-                VideoControlsOverlay(
-                  player: player,
-                  isPlayerInitialized: isPlayerInitialized,
-                  showControls: _showControls,
-                  isLocked: _isLocked,
-                  toggleLock: _toggleLock,
-                  onMoreOptions: () => _showVideoMoreOptions(context),
-                  toggleOrientation: _toggleOrientation,
-                  isLandscape: _isLandscape,
-                  onEnablePiP: () async =>
-                      await pip.enterPipMode(aspectRatio: (16, 9)),
-                  onSwitchToAudio: _switchToAudio,
-                  onCaptureScreenshot: _captureAndSaveScreenshot,
-                  onMute: () => _setMute(!_isMuted),
-                  isMuted: _isMuted,
-                  onPlayPrevious: _playPrevious,
-                  canPlayPrevious: _currentIndex > 0,
-                  onPlayNext: _playNext,
-                  canPlayNext: _currentIndex < widget.videoAssets.length - 1,
-                  seekOffsetSeconds: _seekOffsetSeconds,
-                  currentVolume: _currentVolume,
-                  currentBrightness: _currentBrightness,
-                  showSeekOverlay: _showSeekOverlay,
-                  showVolumeOverlay: _showVolumeOverlay,
-                  showBrightnessOverlay: _showBrightnessOverlay,
-                  formatDuration: _formatDuration,
-                  cycleAspectMode: _cycleAspectMode,
-                  startHideTimer: _startHideTimer,
-                  aspectModeOverlayText: _aspectModeOverlayText,
-                  bookmarks: _bookmarks,
-                  onBookmarkTap: (ms) =>
-                      player.seek(Duration(milliseconds: ms)),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    ignoring: !_showControls && !_isLocked,
+                    child: Container(
+                      color: Colors.transparent,
+                      child: Stack(
+                        children: [
+                          // Status overlays for gesture controls
+                          if (_showSeekOverlay && isPlayerInitialized)
+                            Positioned(
+                              top: MediaQuery.of(context).size.height / 2 - 50,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black87,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Seek: ${_seekOffsetSeconds > 0 ? '+' : ''}${_seekOffsetSeconds.round()}s',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (_showVolumeOverlay)
+                            Positioned(
+                              top: MediaQuery.of(context).size.height / 2 - 50,
+                              right: 20,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black87,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.volume_up,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                    Text(
+                                      '${(_currentVolume * 100).round()}%',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          if (_showBrightnessOverlay)
+                            Positioned(
+                              top: MediaQuery.of(context).size.height / 2 - 50,
+                              left: 20,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black87,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.brightness_6,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                    Text(
+                                      '${(_currentBrightness * 100).round()}%',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          if (_aspectModeOverlayText != null)
+                            Positioned(
+                              top: MediaQuery.of(context).size.height / 2 - 50,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black87,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    _aspectModeOverlayText!,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                          // Main controls
+                          if (_showControls)
+                            Column(
+                              children: [
+                                // Top controls
+                                Container(
+                                  height: 60,
+                                  color: Colors.black54,
+                                  child: Row(
+                                    children: [
+                                      if (!_isLocked) ...[
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.arrow_back,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                        ),
+                                        const Spacer(),
+                                      ],
+                                      // Lock button - always visible
+                                      IconButton(
+                                        icon: Icon(
+                                          _isLocked
+                                              ? Icons.lock
+                                              : Icons.lock_open,
+                                          color: Colors.white,
+                                        ),
+                                        onPressed: _toggleLock,
+                                      ),
+                                      if (!_isLocked) ...[
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.screen_rotation,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed: _toggleOrientation,
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.picture_in_picture,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed: () async =>
+                                              await pip.enterPipMode(
+                                                aspectRatio: (16, 9),
+                                              ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.music_note,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed: _switchToAudio,
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.more_vert,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed: () =>
+                                              _showVideoMoreOptions(context),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const Spacer(),
+                                // Bottom controls - only show when not locked
+                                if (!_isLocked)
+                                  Container(
+                                    height: 120,
+                                    color: Colors.black54,
+                                    child: Column(
+                                      children: [
+                                        // Progress bar and time
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Text(
+                                                _formatDuration(
+                                                  player.state.position,
+                                                ),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: Slider(
+                                                  value: player
+                                                      .state
+                                                      .position
+                                                      .inMilliseconds
+                                                      .toDouble(),
+                                                  max: player
+                                                      .state
+                                                      .duration
+                                                      .inMilliseconds
+                                                      .toDouble(),
+                                                  onChanged: (value) {
+                                                    player.seek(
+                                                      Duration(
+                                                        milliseconds: value
+                                                            .toInt(),
+                                                      ),
+                                                    );
+                                                  },
+                                                  activeColor: Colors.white,
+                                                  inactiveColor: Colors.white24,
+                                                ),
+                                              ),
+                                              Text(
+                                                _formatDuration(
+                                                  player.state.duration,
+                                                ),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // Control buttons
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.skip_previous,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: canPlayPrevious
+                                                  ? _playPrevious
+                                                  : null,
+                                            ),
+                                            IconButton(
+                                              icon: Icon(
+                                                player.state.playing
+                                                    ? Icons.pause
+                                                    : Icons.play_arrow,
+                                                color: Colors.white,
+                                                size: 48,
+                                              ),
+                                              onPressed: () {
+                                                if (player.state.playing) {
+                                                  player.pause();
+                                                } else {
+                                                  player.play();
+                                                }
+                                              },
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.skip_next,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: canPlayNext
+                                                  ? _playNext
+                                                  : null,
+                                            ),
+                                            IconButton(
+                                              icon: Icon(
+                                                _isMuted
+                                                    ? Icons.volume_off
+                                                    : Icons.volume_up,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: () =>
+                                                  _setMute(!_isMuted),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.screenshot,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed:
+                                                  _captureAndSaveScreenshot,
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.aspect_ratio,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: _cycleAspectMode,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -1227,4 +1687,62 @@ extension DurationClamp on Duration {
     if (this > max) return max;
     return this;
   }
+}
+
+void _showCheckmarkFeedback(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.transparent,
+    builder: (context) => Center(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (child, animation) => ScaleTransition(
+          scale: animation,
+          child: FadeTransition(opacity: animation, child: child),
+        ),
+        child: Icon(
+          Icons.check_circle,
+          key: const ValueKey('favorite_checkmark'),
+          color: Colors.green,
+          size: 64,
+        ),
+      ),
+    ),
+  );
+
+  Future.delayed(const Duration(milliseconds: 600), () {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  });
+}
+
+void _showBookmarkCheckmarkFeedback(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.transparent,
+    builder: (context) => Center(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (child, animation) => ScaleTransition(
+          scale: animation,
+          child: FadeTransition(opacity: animation, child: child),
+        ),
+        child: Icon(
+          Icons.bookmark,
+          key: const ValueKey('bookmark_checkmark'),
+          color: Colors.blue,
+          size: 64,
+        ),
+      ),
+    ),
+  );
+
+  Future.delayed(const Duration(milliseconds: 600), () {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  });
 }

@@ -93,15 +93,21 @@ class _BottomControlsState extends State<BottomControls> {
                   initialData: widget.player.state.playing,
                   builder: (context, snapshot) {
                     final isPlaying = snapshot.data ?? false;
-                    return IconButton(
-                      icon: Icon(
-                        isPlaying
-                            ? Icons.pause_circle_filled
-                            : Icons.play_circle_filled,
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, animation) =>
+                          FadeTransition(opacity: animation, child: child),
+                      child: IconButton(
+                        key: ValueKey(isPlaying ? 'pause' : 'play'),
+                        icon: Icon(
+                          isPlaying
+                              ? Icons.pause_circle_filled
+                              : Icons.play_circle_filled,
+                        ),
+                        onPressed: widget.player.playOrPause,
+                        color: Theme.of(context).colorScheme.primary,
+                        iconSize: 48,
                       ),
-                      onPressed: widget.player.playOrPause,
-                      color: Theme.of(context).colorScheme.primary,
-                      iconSize: 48,
                     );
                   },
                 ),

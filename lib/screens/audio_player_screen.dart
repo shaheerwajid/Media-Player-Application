@@ -101,6 +101,40 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
       _favourites = favs.toSet();
       _isFavourite = _favourites.contains(id);
     });
+
+    // Show animated checkmark feedback when adding to favorites
+    if (_favourites.contains(id)) {
+      _showCheckmarkFeedback(context);
+    }
+  }
+
+  void _showCheckmarkFeedback(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      builder: (context) => Center(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) => ScaleTransition(
+            scale: animation,
+            child: FadeTransition(opacity: animation, child: child),
+          ),
+          child: Icon(
+            Icons.check_circle,
+            key: const ValueKey('audio_favorite_checkmark'),
+            color: Colors.green,
+            size: 64,
+          ),
+        ),
+      ),
+    );
+
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+    });
   }
 
   void _loadPlaylists() {
@@ -116,6 +150,9 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     if (!list.contains(id)) {
       list.add(id);
       _prefs.setStringList('playlist_$playlist', list);
+
+      // Show animated checkmark feedback
+      _showPlaylistCheckmarkFeedback(context);
     }
   }
 
@@ -468,6 +505,35 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     return d.inHours > 0
         ? '${two(d.inHours)}:$minutes:$seconds'
         : '$minutes:$seconds';
+  }
+
+  void _showPlaylistCheckmarkFeedback(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      builder: (context) => Center(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) => ScaleTransition(
+            scale: animation,
+            child: FadeTransition(opacity: animation, child: child),
+          ),
+          child: Icon(
+            Icons.playlist_add_check,
+            key: const ValueKey('playlist_checkmark'),
+            color: Colors.blue,
+            size: 64,
+          ),
+        ),
+      ),
+    );
+
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+    });
   }
 
   @override

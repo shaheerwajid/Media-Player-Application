@@ -52,6 +52,7 @@ dependencies:
   shared_preferences: ^2.5.3
   simple_pip_mode: ^1.1.0
   bonsoir: ^6.0.0
+  google_fonts: ^6.1.0
 
 dev_dependencies:
   flutter_test:
