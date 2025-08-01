@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_store_plus/media_store_plus.dart';
-import 'screens/home_screen.dart';
-import 'screens/landing_screen.dart';
+import 'screens/main_navigation_screen.dart';
 import 'screens/settings_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -153,7 +152,7 @@ class MyApp extends StatelessWidget {
           contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
         ),
       ),
-      home: const LandingScreen(),
+      home: const MainNavigationScreen(),
       navigatorObservers: [routeObserver],
       routes: {'/settings': (context) => const SettingsScreen()},
     );
