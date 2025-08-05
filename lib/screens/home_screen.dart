@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../main.dart';
 import 'dart:ui';
 import '../widgets/skeleton_media_card.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class MediaFileCard extends StatefulWidget {
   final Widget? thumbnail;
@@ -432,16 +433,23 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF06141B), Color(0xFF11212D), Color(0xFF4A5C6A)],
-              stops: [0.0, 0.5, 1.0],
+              begin: Alignment.bottomLeft,
+              end: Alignment.topRight,
+              colors: [
+                Color(0xFF06151C),
+                Color(0xFF0C1A24),
+                Color(0xFF172734),
+                Color(0xFF2F404D),
+                Color(0xFF64727A),
+                Color(0xFFCCD1CF),
+              ],
+              stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
             ),
           ),
         ),
         foregroundColor: Theme.of(context).colorScheme.onBackground,
         centerTitle: true,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: GoogleFonts.poppins(
           fontSize: 26,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.1,
@@ -453,16 +461,17 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
             colors: [
-              Color(0xFF06141B),
-              Color(0xFF11212D),
-              Color(0xFF253745),
-              Color(0xFF4A5C6A),
-              Color(0xFF9BA8AB),
+              Color(0xFF06151C),
+              Color(0xFF0C1A24),
+              Color(0xFF172734),
+              Color(0xFF2F404D),
+              Color(0xFF64727A),
+              Color(0xFFCCD1CF),
             ],
-            stops: [0.0, 0.2, 0.45, 0.75, 1.0],
+            stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
           ),
         ),
         child: Padding(
@@ -731,11 +740,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                         ),
                       ]
                     else if (videosToShow.isEmpty)
-                      const Expanded(
+                      Expanded(
                         child: Center(
                           child: Text(
                             'No videos found.',
-                            style: TextStyle(color: Colors.white),
+                            style: GoogleFonts.poppins(color: Colors.white),
                           ),
                         ),
                       )

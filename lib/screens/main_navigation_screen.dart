@@ -23,22 +23,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
             colors: [
-              Color(0xFF06141B),
-              Color(0xFF11212D),
-              Color(0xFF253745),
-              Color(0xFF4A5C6A),
-              Color(0xFF9BA8AB),
+              Color(0xFF06151C),
+              Color(0xFF0C1A24),
+              Color(0xFF172734),
+              Color(0xFF2F404D),
+              Color(0xFF64727A),
+              Color(0xFFCCD1CF),
             ],
-            stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+            stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
           ),
         ),
         child: _screens[_selectedIndex],

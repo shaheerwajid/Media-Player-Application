@@ -2,11 +2,81 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_store_plus/media_store_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'screens/splash_screen.dart';
+import 'screens/permission_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/settings_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
+class AppWrapper extends StatefulWidget {
+  const AppWrapper({Key? key}) : super(key: key);
+
+  @override
+  State<AppWrapper> createState() => _AppWrapperState();
+}
+
+class _AppWrapperState extends State<AppWrapper> {
+  bool _isCheckingPermission = true;
+  bool _hasPermission = false;
+  bool _showSplash = true;
+  bool _splashComplete = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Always show splash for minimum duration
+    await Future.delayed(const Duration(seconds: 4));
+
+    if (!mounted) return;
+
+    // Check permissions
+    final storageStatus = await Permission.storage.status;
+    final photosStatus = await Permission.photos.status;
+    final videosStatus = await Permission.videos.status;
+    final audioStatus = await Permission.audio.status;
+
+    // Consider permission granted if any of the media permissions are granted
+    final hasPermission =
+        storageStatus.isGranted ||
+        photosStatus.isGranted ||
+        videosStatus.isGranted ||
+        audioStatus.isGranted;
+
+    if (mounted) {
+      setState(() {
+        _hasPermission = hasPermission;
+        _isCheckingPermission = false;
+        _splashComplete = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Always show splash screen first
+    if (_showSplash && !_splashComplete) {
+      return const SplashScreen();
+    }
+
+    // After splash is complete, check permissions
+    if (_isCheckingPermission) {
+      return const SplashScreen();
+    }
+
+    if (!_hasPermission) {
+      return const PermissionScreen();
+    }
+
+    return const MainNavigationScreen();
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +98,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseTextTheme = GoogleFonts.montserratTextTheme(
+    final baseTextTheme = GoogleFonts.poppinsTextTheme(
       ThemeData.dark().textTheme,
     );
     final colorScheme = const ColorScheme(
@@ -71,46 +141,46 @@ class MyApp extends StatelessWidget {
           onSurface: Color(0xFFCCD0CF),
         ),
         textTheme: baseTextTheme.copyWith(
-          displayLarge: GoogleFonts.montserrat(
+          displayLarge: GoogleFonts.poppins(
             color: const Color(0xFFCCD0CF),
             fontWeight: FontWeight.bold,
             fontSize: 32,
             letterSpacing: 1.2,
           ),
-          titleLarge: GoogleFonts.montserrat(
+          titleLarge: GoogleFonts.poppins(
             color: const Color(0xFFCCD0CF),
             fontWeight: FontWeight.bold,
             fontSize: 24,
             letterSpacing: 1.1,
           ),
-          titleMedium: GoogleFonts.montserrat(
+          titleMedium: GoogleFonts.poppins(
             color: const Color(0xFF9BA8AB),
             fontWeight: FontWeight.w500,
             fontSize: 16,
             letterSpacing: 0.8,
           ),
-          bodyLarge: GoogleFonts.montserrat(
+          bodyLarge: GoogleFonts.poppins(
             color: const Color(0xFFCCD0CF),
             fontWeight: FontWeight.w400,
             fontSize: 16,
           ),
-          bodyMedium: GoogleFonts.montserrat(
+          bodyMedium: GoogleFonts.poppins(
             color: const Color(0xFF9BA8AB),
             fontWeight: FontWeight.w400,
             fontSize: 14,
           ),
         ),
-        fontFamily: GoogleFonts.montserrat().fontFamily,
+        fontFamily: GoogleFonts.poppins().fontFamily,
         useMaterial3: true,
         appBarTheme: AppBarTheme(
           backgroundColor: colorScheme.surface,
           foregroundColor: colorScheme.onSurface,
           elevation: 0,
           centerTitle: true,
-          titleTextStyle: const TextStyle(
+          titleTextStyle: GoogleFonts.poppins(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color(0xFFCCD0CF),
+            color: const Color(0xFFCCD0CF),
           ),
           iconTheme: const IconThemeData(color: Color(0xFF4A5C6A)),
         ),
@@ -142,17 +212,19 @@ class MyApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            textStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
             shadowColor: colorScheme.shadow.withOpacity(0.3),
             elevation: 4,
           ),
         ),
         snackBarTheme: SnackBarThemeData(
           backgroundColor: colorScheme.inverseSurface,
-          contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
+          contentTextStyle: GoogleFonts.poppins(
+            color: colorScheme.onInverseSurface,
+          ),
         ),
       ),
-      home: const MainNavigationScreen(),
+      home: const AppWrapper(),
       navigatorObservers: [routeObserver],
       routes: {'/settings': (context) => const SettingsScreen()},
     );

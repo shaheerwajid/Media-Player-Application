@@ -7,6 +7,7 @@ import '../services/video_service.dart';
 import 'video_player_screen/video_player_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/skeleton_media_card.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class VideoScreen extends StatefulWidget {
   const VideoScreen({Key? key}) : super(key: key);
@@ -30,6 +31,12 @@ class _VideoScreenState extends State<VideoScreen> {
   Map<String, List<AssetEntity>> _folderMap = {};
   List<String> _folderList = [];
   String? _selectedFolder;
+  List<String> _playlists = [];
+  String? _selectedPlaylist;
+  String? _sortBy = 'date';
+  bool _sortAscending = false;
+  List<AssetEntity> _sortedVideos = [];
+  bool _isSorting = false;
 
   @override
   void initState() {
@@ -41,36 +48,261 @@ class _VideoScreenState extends State<VideoScreen> {
 
   Future<void> _initPrefs() async {
     _prefs = await SharedPreferences.getInstance();
+
+    if (!mounted) return; // Early return if widget is disposed
+
     _loadFavourites();
     _loadHistory();
+    _loadPlaylists();
   }
 
   void _loadFavourites() {
+    if (!mounted) return; // Early return if widget is disposed
+
     final favs = _prefs.getStringList('favourites') ?? [];
-    setState(() {
-      _favourites = favs.toSet();
-    });
+    if (mounted) {
+      setState(() {
+        _favourites = favs.toSet();
+      });
+    }
   }
 
   void _loadHistory() {
+    if (!mounted) return; // Early return if widget is disposed
+
     final historyIds = _prefs.getStringList('video_history') ?? [];
     if (historyIds.isNotEmpty) {
-      setState(() {
-        // Use a Map to ensure unique entries by ID
-        final Map<String, AssetEntity> uniqueVideos = {};
-        for (final asset in _videoAssets) {
-          if (historyIds.contains(asset.id)) {
-            uniqueVideos[asset.id] = asset;
+      if (mounted) {
+        setState(() {
+          // Use a Map to ensure unique entries by ID
+          final Map<String, AssetEntity> uniqueVideos = {};
+          for (final asset in _videoAssets) {
+            if (historyIds.contains(asset.id)) {
+              uniqueVideos[asset.id] = asset;
+            }
           }
+          // Convert back to list and maintain history order
+          _historyVideos = historyIds
+              .map((id) => uniqueVideos[id])
+              .where((asset) => asset != null)
+              .cast<AssetEntity>()
+              .toList();
+        });
+      }
+    }
+  }
+
+  void _loadPlaylists() {
+    if (!mounted) return; // Early return if widget is disposed
+
+    final keys = _prefs.getStringList('video_playlists') ?? [];
+    if (mounted) {
+      setState(() {
+        _playlists = keys;
+        // Add default "Favourite Videos" playlist if it doesn't exist
+        if (!_playlists.contains('Favourite Videos')) {
+          _playlists.add('Favourite Videos');
+          _prefs.setStringList('video_playlists', _playlists);
         }
-        // Convert back to list and maintain history order
-        _historyVideos = historyIds
-            .map((id) => uniqueVideos[id])
-            .where((asset) => asset != null)
-            .cast<AssetEntity>()
-            .toList();
       });
     }
+  }
+
+  List<AssetEntity> _getPlaylistVideos(String playlist) {
+    if (playlist == 'Favourite Videos') {
+      // For Favourite Videos playlist, use the favorites list
+      final List<AssetEntity> favoriteVideos = [];
+      for (final asset in _videoAssets) {
+        if (_favourites.contains(asset.id)) {
+          favoriteVideos.add(asset);
+        }
+      }
+      return favoriteVideos;
+    }
+
+    final ids = _prefs.getStringList('playlist_$playlist') ?? [];
+    final List<AssetEntity> playlistVideos = [];
+
+    // Ensure unique IDs
+    final uniqueIds = ids.toSet().toList();
+    _prefs.setStringList('playlist_$playlist', uniqueIds);
+
+    for (final asset in _videoAssets) {
+      if (uniqueIds.contains(asset.id)) {
+        playlistVideos.add(asset);
+      }
+    }
+    return playlistVideos;
+  }
+
+  void _createPlaylist(String name) {
+    if (!_playlists.contains(name)) {
+      _playlists.add(name);
+      _prefs.setStringList('video_playlists', _playlists);
+      _prefs.setStringList('playlist_$name', []);
+      setState(() {});
+      _loadPlaylists();
+    }
+  }
+
+  void _showPlaylistSelectDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder: (c) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.clear_outlined),
+                title: const Text('All Videos'),
+                onTap: () {
+                  setState(() => _selectedPlaylist = null);
+                  Navigator.pop(c);
+                },
+              ),
+              for (final playlist in _playlists)
+                ListTile(
+                  leading: const Icon(Icons.queue_music_outlined),
+                  title: Text(playlist),
+                  onTap: () {
+                    setState(() => _selectedPlaylist = playlist);
+                    Navigator.pop(c);
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _addToPlaylist(AssetEntity video, String playlist) {
+    final list = _prefs.getStringList('playlist_$playlist') ?? [];
+    if (!list.contains(video.id)) {
+      list.add(video.id);
+      _prefs.setStringList('playlist_$playlist', list);
+    }
+  }
+
+  void _removeFromPlaylist(AssetEntity video, String playlist) {
+    final list = _prefs.getStringList('playlist_$playlist') ?? [];
+    if (list.contains(video.id)) {
+      list.remove(video.id);
+      _prefs.setStringList('playlist_$playlist', list);
+    }
+  }
+
+  void _showAddToPlaylistDialog(AssetEntity video) {
+    final TextEditingController playlistController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (c) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Add to Playlist',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFCCD0CF),
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: Color(0xFF9BA8AB),
+                            ),
+                            onPressed: () => Navigator.pop(c),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: playlistController,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          hintText: 'New playlist name',
+                          border: OutlineInputBorder(),
+                        ),
+                        onSubmitted: (value) {
+                          if (value.isNotEmpty) {
+                            _createPlaylist(value);
+                            _addToPlaylist(video, value);
+                            playlistController.clear();
+                            Navigator.pop(c);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_playlists.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Existing Playlists:',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFCCD0CF),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...(_playlists.map((playlist) {
+                        final inPlaylist =
+                            (_prefs.getStringList('playlist_$playlist') ?? [])
+                                .contains(video.id);
+                        return ListTile(
+                          leading: Icon(
+                            inPlaylist
+                                ? Icons.check_circle
+                                : Icons.queue_music_outlined,
+                            color: inPlaylist
+                                ? Colors.green
+                                : const Color(0xFF9BA8AB),
+                          ),
+                          title: Text(playlist),
+                          onTap: () {
+                            if (inPlaylist) {
+                              _removeFromPlaylist(video, playlist);
+                            } else {
+                              _addToPlaylist(video, playlist);
+                            }
+                            setModalState(() {});
+                          },
+                        );
+                      })),
+                    ],
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _addToHistory(AssetEntity video) async {
@@ -122,11 +354,14 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 
   void _buildFolderMap(List<AssetEntity> assets) async {
-    if (!mounted) return;
+    if (!mounted) return; // Early return if widget is disposed
 
     print('Building folder map for ${assets.length} videos');
     final Map<String, List<AssetEntity>> folderMap = {};
+
     for (final asset in assets) {
+      if (!mounted) return; // Early return if widget is disposed
+
       try {
         final file = await asset.file;
         if (file != null) {
@@ -163,6 +398,7 @@ class _VideoScreenState extends State<VideoScreen> {
     if (_searchController.text.isEmpty) {
       setState(() {
         _filteredVideos = _videoAssets;
+        _sortedVideos.clear(); // Clear cached sorted videos
       });
     } else {
       final query = _searchController.text.toLowerCase();
@@ -171,6 +407,7 @@ class _VideoScreenState extends State<VideoScreen> {
           final title = asset.title?.toLowerCase() ?? '';
           return title.contains(query);
         }).toList();
+        _sortedVideos.clear(); // Clear cached sorted videos
       });
     }
   }
@@ -181,7 +418,11 @@ class _VideoScreenState extends State<VideoScreen> {
         _loading = true;
       });
     }
+
     final result = await VideoService.fetchAllVideos();
+
+    if (!mounted) return; // Early return if widget is disposed
+
     if (result.permissionState == PermissionState.authorized ||
         result.permissionState == PermissionState.limited) {
       if (mounted) {
@@ -189,11 +430,19 @@ class _VideoScreenState extends State<VideoScreen> {
           _videoAssets = result.videos;
           _filteredVideos = result.videos;
           _loading = false;
+          _sortedVideos.clear(); // Clear cached sorted videos
         });
       }
-      _loadFavourites();
-      _loadHistory();
-      _buildFolderMap(result.videos);
+
+      if (mounted) {
+        _loadFavourites();
+        _loadHistory();
+        _buildFolderMap(result.videos);
+        // Apply default sort (date, descending)
+        if (_sortBy == 'date') {
+          _performAsyncSort(result.videos);
+        }
+      }
     } else {
       if (mounted) {
         setState(() {
@@ -202,8 +451,11 @@ class _VideoScreenState extends State<VideoScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Storage permission is required to access videos.'),
+          SnackBar(
+            content: Text(
+              'Storage permission is required to access videos.',
+              style: GoogleFonts.poppins(),
+            ),
           ),
         );
       }
@@ -218,48 +470,77 @@ class _VideoScreenState extends State<VideoScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text(
-          'Media Player',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFFCCD0CF),
+        automaticallyImplyLeading: false,
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: Theme.of(context).textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  hintText: 'Search videos...',
+                  border: InputBorder.none,
+                  hintStyle: Theme.of(context).textTheme.bodyMedium,
+                  filled: true,
+                  fillColor: const Color(0xFF4A5C6A).withOpacity(0.18),
+                  prefixIcon: const Icon(
+                    Icons.search_outlined,
+                    color: Color(0xFF4A5C6A),
+                  ),
+                ),
+              )
+            : Text(
+                'Video Browser',
+                style: GoogleFonts.poppins(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.1,
+                  color: const Color(0xFFCCD0CF),
+                ),
+              ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomLeft,
+              end: Alignment.topRight,
+              colors: [
+                Color(0xFF06151C),
+                Color(0xFF0C1A24),
+                Color(0xFF172734),
+                Color(0xFF2F404D),
+                Color(0xFF64727A),
+                Color(0xFFCCD1CF),
+              ],
+              stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+            ),
           ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        foregroundColor: const Color(0xFFCCD0CF),
         centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.cleaning_services_outlined,
-              color: Color(0xFF9BA8AB),
-            ),
-            onPressed: () {
-              // TODO: Implement clean functionality
-            },
-          ),
-          IconButton(
-            icon: Icon(
-              _isSearching ? Icons.close : Icons.search,
-              color: const Color(0xFF9BA8AB),
-            ),
-            onPressed: () {
-              setState(() {
-                _isSearching = !_isSearching;
-                if (!_isSearching) {
+          if (_isSearching)
+            IconButton(
+              icon: const Icon(Icons.close_outlined, color: Color(0xFF9BA8AB)),
+              onPressed: () {
+                setState(() {
+                  _isSearching = false;
                   _searchController.clear();
                   _filteredVideos = _videoAssets;
-                }
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Color(0xFF9BA8AB)),
-            onPressed: () {
-              // TODO: Implement delete functionality
-            },
-          ),
+                  _sortedVideos.clear(); // Clear cached sorted videos
+                });
+              },
+            )
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.search_outlined, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _isSearching = true;
+                });
+              },
+            ),
+          ],
         ],
       ),
       body: SafeArea(
@@ -272,12 +553,12 @@ class _VideoScreenState extends State<VideoScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'History',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFCCD0CF),
+                      color: const Color(0xFFCCD0CF),
                     ),
                   ),
                   IconButton(
@@ -296,11 +577,11 @@ class _VideoScreenState extends State<VideoScreen> {
               SizedBox(
                 height: 110,
                 child: _historyVideos.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'No recent videos',
-                          style: TextStyle(
-                            color: Color(0xFF9BA8AB),
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFF9BA8AB),
                             fontSize: 14,
                           ),
                         ),
@@ -316,73 +597,117 @@ class _VideoScreenState extends State<VideoScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Search Field (when searching)
-              if (_isSearching) ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF253745).withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF4A5C6A).withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    autofocus: true,
-                    style: const TextStyle(
-                      color: Color(0xFFCCD0CF),
-                      fontSize: 16,
-                    ),
-                    decoration: const InputDecoration(
-                      hintText: 'Search videos...',
-                      hintStyle: TextStyle(
-                        color: Color(0xFF9BA8AB),
-                        fontSize: 16,
-                      ),
-                      border: InputBorder.none,
-                      prefixIcon: Icon(Icons.search, color: Color(0xFF9BA8AB)),
-                    ),
-                  ),
-                ),
-              ],
-
               // Filter Tabs
               Row(
                 children: [
                   Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildFilterTab('Videos', 0),
-                          const SizedBox(width: 12),
-                          _buildFilterTab('Folder', 1),
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
                         ],
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final tabWidth = constraints.maxWidth / 3;
+                          return Stack(
+                            children: [
+                              // Sliding indicator
+                              AnimatedPositioned(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                left: _selectedTabIndex * tabWidth,
+                                top: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: tabWidth,
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF4A5C6A,
+                                    ).withOpacity(0.4),
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFFCCD0CF,
+                                      ).withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // Tab buttons
+                              Row(
+                                children: [
+                                  Expanded(child: _buildFilterTab('Videos', 0)),
+                                  Expanded(child: _buildFilterTab('Folder', 1)),
+                                  Expanded(
+                                    child: _buildFilterTab('Playlist', 2),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.shuffle, color: Color(0xFF9BA8AB)),
-                    onPressed: () {
-                      // TODO: Implement shuffle functionality
-                    },
+                  const SizedBox(width: 12),
+                  // Always reserve space for sort button to prevent layout shift
+                  SizedBox(
+                    width: 48,
+                    child: _selectedTabIndex == 0 && !_showFolders
+                        ? Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.1),
+                                width: 1,
+                              ),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.sort,
+                                color: Color(0xFFCCD0CF),
+                              ),
+                              onPressed: () {
+                                _showSortDialog();
+                              },
+                            ),
+                          )
+                        : null,
                   ),
-                  IconButton(
-                    icon: Icon(
-                      _isGridView ? Icons.view_list : Icons.grid_view,
-                      color: const Color(0xFF9BA8AB),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.1),
+                        width: 1,
+                      ),
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _isGridView = !_isGridView;
-                      });
-                    },
+                    child: IconButton(
+                      icon: Icon(
+                        _isGridView ? Icons.view_list : Icons.grid_view,
+                        color: const Color(0xFFCCD0CF),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isGridView = !_isGridView;
+                        });
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -401,18 +726,18 @@ class _VideoScreenState extends State<VideoScreen> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        const Text(
+                                        Text(
                                           'No folders found.',
-                                          style: TextStyle(
-                                            color: Color(0xFF9BA8AB),
+                                          style: GoogleFonts.poppins(
+                                            color: const Color(0xFF9BA8AB),
                                             fontSize: 16,
                                           ),
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
                                           'Debug: _showFolders=$_showFolders, _folderList.length=${_folderList.length}',
-                                          style: const TextStyle(
-                                            color: Color(0xFF9BA8AB),
+                                          style: GoogleFonts.poppins(
+                                            color: const Color(0xFF9BA8AB),
                                             fontSize: 12,
                                           ),
                                         ),
@@ -447,7 +772,63 @@ class _VideoScreenState extends State<VideoScreen> {
                                 Expanded(child: _buildFolderVideosList()),
                               ],
                             )
-                    : _filteredVideos.isEmpty
+                    : _selectedTabIndex ==
+                          2 // 2 is the Playlist tab index
+                    ? _selectedPlaylist == null
+                          ? _playlists.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          'No playlists found.',
+                                          style: GoogleFonts.poppins(
+                                            color: const Color(0xFF9BA8AB),
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Create playlists to organize your videos.',
+                                          style: GoogleFonts.poppins(
+                                            color: const Color(0xFF9BA8AB),
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : GridView.builder(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 8,
+                                    ),
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 2,
+                                          childAspectRatio: 1.2,
+                                        ),
+                                    itemCount: _playlists.length,
+                                    itemBuilder: (context, index) {
+                                      final playlist = _playlists[index];
+                                      final count = _getPlaylistVideos(
+                                        playlist,
+                                      ).length;
+                                      return _buildPlaylistCard(
+                                        playlist,
+                                        count,
+                                        index,
+                                      );
+                                    },
+                                  )
+                          : Column(
+                              children: [
+                                _buildBackToPlaylistsCard(),
+                                Expanded(child: _buildPlaylistVideosList()),
+                              ],
+                            )
+                    : _getVideosToShow().isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -455,6 +836,8 @@ class _VideoScreenState extends State<VideoScreen> {
                             Icon(
                               _isSearching
                                   ? Icons.search_off
+                                  : _selectedPlaylist != null
+                                  ? Icons.queue_music_outlined
                                   : Icons.video_library_outlined,
                               color: const Color(0xFF9BA8AB),
                               size: 48,
@@ -463,9 +846,11 @@ class _VideoScreenState extends State<VideoScreen> {
                             Text(
                               _isSearching
                                   ? 'No videos found matching your search.'
+                                  : _selectedPlaylist != null
+                                  ? 'No videos in this playlist.'
                                   : 'No videos found.',
-                              style: const TextStyle(
-                                color: Color(0xFF9BA8AB),
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF9BA8AB),
                                 fontSize: 16,
                               ),
                               textAlign: TextAlign.center,
@@ -484,17 +869,17 @@ class _VideoScreenState extends State<VideoScreen> {
                               crossAxisCount: 2,
                               childAspectRatio: 0.8,
                             ),
-                        itemCount: _filteredVideos.length,
+                        itemCount: _getVideosToShow().length,
                         itemBuilder: (context, index) {
-                          final asset = _filteredVideos[index];
+                          final asset = _getVideosToShow()[index];
                           return _buildGridVideoCard(asset, index);
                         },
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _filteredVideos.length,
+                        itemCount: _getVideosToShow().length,
                         itemBuilder: (context, index) {
-                          final asset = _filteredVideos[index];
+                          final asset = _getVideosToShow()[index];
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 6),
                             child: _buildVideoCard(asset, index),
@@ -518,6 +903,10 @@ class _VideoScreenState extends State<VideoScreen> {
           if (label == 'Folder') {
             _showFolders = true;
             _selectedFolder = null;
+          } else if (label == 'Playlist') {
+            _showFolders = false;
+            _selectedFolder = null;
+            _selectedPlaylist = null;
           } else {
             _showFolders = false;
             _selectedFolder = null;
@@ -525,24 +914,18 @@ class _VideoScreenState extends State<VideoScreen> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF4A5C6A) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF4A5C6A)
-                : const Color(0xFF253745),
-            width: 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected
-                ? const Color(0xFFCCD0CF)
-                : const Color(0xFF9BA8AB),
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            style: GoogleFonts.poppins(
+              color: isSelected
+                  ? const Color(0xFFCCD0CF)
+                  : const Color(0xFF9BA8AB),
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 14,
+            ),
+            child: Text(label),
           ),
         ),
       ),
@@ -615,8 +998,8 @@ class _VideoScreenState extends State<VideoScreen> {
             const SizedBox(height: 6),
             Text(
               asset.title ?? 'Unknown',
-              style: const TextStyle(
-                color: Color(0xFFCCD0CF),
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFCCD0CF),
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -766,19 +1149,19 @@ class _VideoScreenState extends State<VideoScreen> {
                               ),
                             );
                           } catch (e) {
-                            return const Text(
+                            return Text(
                               'Unknown',
-                              style: TextStyle(
-                                color: Color(0xFF9BA8AB),
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF9BA8AB),
                                 fontSize: 14,
                               ),
                             );
                           }
                         } else {
-                          return const Text(
+                          return Text(
                             'Unknown',
-                            style: TextStyle(
-                              color: Color(0xFF9BA8AB),
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF9BA8AB),
                               fontSize: 14,
                             ),
                           );
@@ -788,7 +1171,7 @@ class _VideoScreenState extends State<VideoScreen> {
                   ],
                 ),
               ),
-              // Favourite icon and more options
+              // Favourite icon and playlist button
               Column(
                 children: [
                   Icon(
@@ -801,10 +1184,15 @@ class _VideoScreenState extends State<VideoScreen> {
                     size: 20,
                   ),
                   const SizedBox(height: 8),
-                  const Icon(
-                    Icons.more_vert,
-                    color: Color(0xFF9BA8AB),
-                    size: 20,
+                  GestureDetector(
+                    onTap: () {
+                      _showAddToPlaylistDialog(asset);
+                    },
+                    child: const Icon(
+                      Icons.playlist_add,
+                      color: Color(0xFF9BA8AB),
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
@@ -865,8 +1253,8 @@ class _VideoScreenState extends State<VideoScreen> {
                     folder.split(Platform.pathSeparator).last,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFCCD0CF),
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFCCD0CF),
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -914,10 +1302,10 @@ class _VideoScreenState extends State<VideoScreen> {
               size: 24,
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Back to Folders',
-              style: TextStyle(
-                color: Color(0xFFCCD0CF),
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFCCD0CF),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -935,10 +1323,13 @@ class _VideoScreenState extends State<VideoScreen> {
         : <AssetEntity>[];
 
     if (folderVideos.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No videos in this folder.',
-          style: TextStyle(color: Color(0xFF9BA8AB), fontSize: 16),
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF9BA8AB),
+            fontSize: 16,
+          ),
         ),
       );
     }
@@ -953,6 +1344,148 @@ class _VideoScreenState extends State<VideoScreen> {
           child: _buildVideoCard(asset, index),
         );
       },
+    );
+  }
+
+  Widget _buildPlaylistCard(String playlist, int count, int index) {
+    final overlayColor = index % 2 == 0
+        ? const Color(0xFF4A5C6A)
+        : const Color(0xFF9BA8AB);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPlaylist = playlist;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: overlayColor.withOpacity(0.28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF06141B).withOpacity(0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+          border: Border.all(
+            width: 1.2,
+            style: BorderStyle.solid,
+            color: Colors.white.withOpacity(0.10),
+          ),
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.queue_music_outlined,
+                    size: 28,
+                    color: const Color(0xFFCCD0CF),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    playlist,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFCCD0CF),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$count video${count == 1 ? '' : 's'}',
+                    style: const TextStyle(
+                      color: Color(0xFF9BA8AB),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaylistVideosList() {
+    final playlistVideos =
+        _selectedPlaylist != null &&
+            _getPlaylistVideos(_selectedPlaylist!).isNotEmpty
+        ? List<AssetEntity>.from(_getPlaylistVideos(_selectedPlaylist!))
+        : <AssetEntity>[];
+
+    if (playlistVideos.isEmpty) {
+      return const Center(
+        child: Text(
+          'No videos in this playlist.',
+          style: TextStyle(color: Color(0xFF9BA8AB), fontSize: 16),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: playlistVideos.length,
+      itemBuilder: (context, index) {
+        final asset = playlistVideos[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: _buildVideoCard(asset, index),
+        );
+      },
+    );
+  }
+
+  Widget _buildBackToPlaylistsCard() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPlaylist = null;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF11212D).withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF253745).withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.arrow_back_outlined,
+              color: Color(0xFFCCD0CF),
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Back to Playlists',
+              style: TextStyle(
+                color: Color(0xFFCCD0CF),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1144,7 +1677,558 @@ class _VideoScreenState extends State<VideoScreen> {
                 size: 16,
               ),
             ),
+            // Playlist button overlay
+            Positioned(
+              top: 8,
+              right: 32,
+              child: GestureDetector(
+                onTap: () {
+                  _showAddToPlaylistDialog(asset);
+                },
+                child: const Icon(
+                  Icons.playlist_add,
+                  color: Color(0xFF9BA8AB),
+                  size: 16,
+                ),
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  List<AssetEntity> _getVideosToShow() {
+    List<AssetEntity> videosToShow;
+    if (_selectedPlaylist != null) {
+      videosToShow = _getPlaylistVideos(_selectedPlaylist!);
+    } else if (_isSearching) {
+      videosToShow = _filteredVideos;
+    } else {
+      videosToShow = _videoAssets;
+    }
+
+    // Ensure no duplicates by ID
+    videosToShow = _removeDuplicates(videosToShow);
+
+    // For name and length sorting, use synchronous sorting
+    if (_sortBy == 'name' || _sortBy == 'length') {
+      return _sortVideos(videosToShow);
+    } else {
+      // For date and size sorting, only return sorted results if available
+      if (_sortedVideos.isNotEmpty && !_isSorting) {
+        return _removeDuplicates(_sortedVideos);
+      } else {
+        // If no sorted results available, trigger async sort and return original list
+        if (!_isSorting) {
+          _performAsyncSort(videosToShow);
+        }
+        return videosToShow;
+      }
+    }
+  }
+
+  List<AssetEntity> _removeDuplicates(List<AssetEntity> videos) {
+    final seen = <String>{};
+    final uniqueVideos = <AssetEntity>[];
+
+    for (final video in videos) {
+      if (!seen.contains(video.id)) {
+        seen.add(video.id);
+        uniqueVideos.add(video);
+      }
+    }
+
+    return uniqueVideos;
+  }
+
+  void _performAsyncSort(List<AssetEntity> videos) async {
+    if (_isSorting || !mounted) return;
+
+    if (mounted) {
+      setState(() {
+        _isSorting = true;
+      });
+    }
+
+    try {
+      List<AssetEntity> sortedVideos = List<AssetEntity>.from(videos);
+
+      if (_sortBy == 'date') {
+        // Sort by date
+        final List<MapEntry<AssetEntity, DateTime>> videosWithDates = [];
+
+        for (final video in sortedVideos) {
+          if (!mounted) return; // Early return if widget is disposed
+
+          try {
+            final file = await video.file;
+            if (file != null) {
+              final stat = file.statSync();
+              videosWithDates.add(MapEntry(video, stat.modified));
+            }
+          } catch (e) {
+            // Skip videos with errors
+          }
+        }
+
+        videosWithDates.sort((a, b) {
+          return _sortAscending
+              ? a.value.compareTo(b.value)
+              : b.value.compareTo(a.value);
+        });
+
+        sortedVideos = videosWithDates.map((entry) => entry.key).toList();
+      } else if (_sortBy == 'size') {
+        // Sort by file size
+        final List<MapEntry<AssetEntity, int>> videosWithSizes = [];
+
+        for (final video in sortedVideos) {
+          if (!mounted) return; // Early return if widget is disposed
+
+          try {
+            final file = await video.file;
+            if (file != null) {
+              final size = file.lengthSync();
+              videosWithSizes.add(MapEntry(video, size));
+            }
+          } catch (e) {
+            // Skip videos with errors
+          }
+        }
+
+        videosWithSizes.sort((a, b) {
+          return _sortAscending
+              ? a.value.compareTo(b.value)
+              : b.value.compareTo(a.value);
+        });
+
+        sortedVideos = videosWithSizes.map((entry) => entry.key).toList();
+      }
+
+      if (mounted) {
+        setState(() {
+          _sortedVideos = sortedVideos;
+          _isSorting = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSorting = false;
+        });
+      }
+    }
+  }
+
+  List<AssetEntity> _sortVideos(List<AssetEntity> videos) {
+    final sortedVideos = List<AssetEntity>.from(videos);
+
+    switch (_sortBy) {
+      case 'name':
+        sortedVideos.sort((a, b) {
+          final nameA = (a.title ?? '').toLowerCase();
+          final nameB = (b.title ?? '').toLowerCase();
+          return _sortAscending
+              ? nameA.compareTo(nameB)
+              : nameB.compareTo(nameA);
+        });
+        break;
+      case 'length':
+        sortedVideos.sort((a, b) {
+          final durationA = a.duration ?? 0;
+          final durationB = b.duration ?? 0;
+          return _sortAscending
+              ? durationA.compareTo(durationB)
+              : durationB.compareTo(durationA);
+        });
+        break;
+      case 'date':
+      case 'size':
+        // These are handled by async sorting
+        break;
+    }
+
+    return sortedVideos;
+  }
+
+  void _showSortDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (c) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  Color(0xFF06151C),
+                  Color(0xFF0C1A24),
+                  Color(0xFF172734),
+                  Color(0xFF2F404D),
+                  Color(0xFF64727A),
+                  Color(0xFFCCD1CF),
+                ],
+                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF4A5C6A,
+                                  ).withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.sort,
+                                  color: Color(0xFFCCD0CF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Sort Videos',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFCCD0CF),
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Color(0xFF9BA8AB),
+                                    size: 20,
+                                  ),
+                                ),
+                                onPressed: () => Navigator.pop(c),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Sort options
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              _buildSortOption(
+                                c,
+                                'name',
+                                Icons.sort_by_alpha,
+                                'Name',
+                                _sortBy == 'name' ? 'A to Z' : 'Z to A',
+                                _sortBy == 'name',
+                              ),
+                              _buildSortOption(
+                                c,
+                                'date',
+                                Icons.calendar_today,
+                                'Date',
+                                _sortBy == 'date'
+                                    ? 'Oldest first'
+                                    : 'Newest first',
+                                _sortBy == 'date',
+                              ),
+                              _buildSortOption(
+                                c,
+                                'length',
+                                Icons.timer,
+                                'Duration',
+                                _sortBy == 'length'
+                                    ? 'Shortest first'
+                                    : 'Longest first',
+                                _sortBy == 'length',
+                              ),
+                              _buildSortOption(
+                                c,
+                                'size',
+                                Icons.storage,
+                                'File Size',
+                                _sortBy == 'size'
+                                    ? 'Smallest first'
+                                    : 'Largest first',
+                                _sortBy == 'size',
+                              ),
+                              const SizedBox(height: 16),
+                              // Divider
+                              Container(
+                                height: 1,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.white.withOpacity(0.2),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              // Order options
+                              _buildOrderOption(
+                                c,
+                                true,
+                                Icons.arrow_upward,
+                                'Ascending',
+                                _sortAscending,
+                              ),
+                              _buildOrderOption(
+                                c,
+                                false,
+                                Icons.arrow_downward,
+                                'Descending',
+                                !_sortAscending,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOption(
+    BuildContext context,
+    String sortType,
+    IconData icon,
+    String title,
+    String subtitle,
+    bool isSelected,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFF4A5C6A).withOpacity(0.4)
+            : Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFFCCD0CF).withOpacity(0.3)
+              : Colors.white.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            setState(() {
+              _sortBy = sortType;
+              _sortedVideos.clear();
+            });
+            Navigator.pop(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF).withOpacity(0.2)
+                        : Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF)
+                        : const Color(0xFF9BA8AB),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFCCD0CF),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: const Color(0xFF9BA8AB),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCCD0CF).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Color(0xFFCCD0CF),
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderOption(
+    BuildContext context,
+    bool ascending,
+    IconData icon,
+    String title,
+    bool isSelected,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFF4A5C6A).withOpacity(0.4)
+            : Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFFCCD0CF).withOpacity(0.3)
+              : Colors.white.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            setState(() {
+              _sortAscending = ascending;
+              _sortedVideos.clear();
+            });
+            Navigator.pop(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF).withOpacity(0.2)
+                        : Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF)
+                        : const Color(0xFF9BA8AB),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFCCD0CF),
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCCD0CF).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Color(0xFFCCD0CF),
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -17,6 +17,7 @@ import 'package:share_plus/share_plus.dart';
 // import 'package:cast/cast.dart';
 import 'package:easy_video_editor/easy_video_editor.dart';
 import 'dart:ui' as ui;
+import 'dart:ui';
 import 'dart:typed_data';
 import 'package:flutter/rendering.dart';
 import 'package:media_store_plus/media_store_plus.dart' show MediaStorePlatform;
@@ -28,6 +29,7 @@ import 'package:simple_pip_mode/aspect_ratio.dart' as pip_mode;
 import 'package:simple_pip_mode/actions/pip_action.dart';
 import 'package:simple_pip_mode/actions/pip_actions_layout.dart';
 import 'package:simple_pip_mode/pip_widget.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'widgets/video_controls_overlay.dart';
 import 'widgets/player_gestures.dart';
@@ -653,191 +655,695 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void _showMoreOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (c) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.repeat_outlined),
-                title: Text(
-                  'Playback Mode',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                subtitle: Text(
-                  _loopMode == 'order'
-                      ? 'Play in Order'
-                      : _loopMode == 'loop'
-                      ? 'Loop Current'
-                      : _loopMode == 'shuffle'
-                      ? 'Shuffle'
-                      : 'Stop After Current',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(
-                        'Playback Mode',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          RadioListTile<String>(
-                            value: 'order',
-                            groupValue: _loopMode,
-                            title: Text(
-                              'Play in Order',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            onChanged: (v) {
-                              _setLoopMode('order');
-                              Navigator.pop(context);
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'loop',
-                            groupValue: _loopMode,
-                            title: Text(
-                              'Loop Current',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            onChanged: (v) {
-                              _setLoopMode('loop');
-                              Navigator.pop(context);
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'shuffle',
-                            groupValue: _loopMode,
-                            title: Text(
-                              'Shuffle',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            onChanged: (v) {
-                              _setLoopMode('shuffle');
-                              Navigator.pop(context);
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'stop',
-                            groupValue: _loopMode,
-                            title: Text(
-                              'Stop After Current',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            onChanged: (v) {
-                              _setLoopMode('stop');
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ],
-                      ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  Color(0xFF06151C),
+                  Color(0xFF0C1A24),
+                  Color(0xFF172734),
+                  Color(0xFF2F404D),
+                  Color(0xFF64727A),
+                  Color(0xFFCCD1CF),
+                ],
+                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
                     ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.speed_outlined),
-                title: Text(
-                  'Playback speed',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                subtitle: Text(
-                  ' x',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ), // You can update this to show actual speed
-                onTap: () {
-                  Navigator.pop(c);
-                  _showSpeedSelect();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.phone),
-                title: Text(
-                  'Set as ringtone',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                onTap: () async {
-                  Navigator.pop(c);
-                  final file = await widget.videoAssets[_currentIndex].file;
-                  if (file != null) {
-                    final success = await NativeAudioService.setAsRingtone(
-                      file.path,
-                    );
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            success ? 'Ringtone set' : 'Failed to set ringtone',
-                            style: Theme.of(context).textTheme.bodyLarge,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                      );
-                    }
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.share_outlined, color: Colors.blue),
-                title: Text(
-                  'Share',
-                  style: Theme.of(context).textTheme.bodyLarge,
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF4A5C6A,
+                                  ).withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.more_vert,
+                                  color: Color(0xFFCCD0CF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Audio Options',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFCCD0CF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Options
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              _buildAudioOptionItem(
+                                context,
+                                Icons.repeat_outlined,
+                                'Playback Mode',
+                                () {
+                                  Navigator.pop(c);
+                                  _showAudioPlaybackModeDialog(context);
+                                },
+                                subtitle: _loopMode == 'order'
+                                    ? 'Play in Order'
+                                    : _loopMode == 'loop'
+                                    ? 'Loop Current'
+                                    : _loopMode == 'shuffle'
+                                    ? 'Shuffle'
+                                    : 'Stop After Current',
+                              ),
+                              _buildAudioOptionItem(
+                                context,
+                                Icons.speed_outlined,
+                                'Playback Speed',
+                                () {
+                                  Navigator.pop(c);
+                                  _showSpeedSelect();
+                                },
+                                subtitle: '${_playbackSpeed}x',
+                              ),
+                              _buildAudioOptionItem(
+                                context,
+                                Icons.phone,
+                                'Set as Ringtone',
+                                () async {
+                                  Navigator.pop(c);
+                                  final file = await widget
+                                      .videoAssets[_currentIndex]
+                                      .file;
+                                  if (file != null) {
+                                    final success =
+                                        await NativeAudioService.setAsRingtone(
+                                          file.path,
+                                        );
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            success
+                                                ? 'Ringtone set'
+                                                : 'Failed to set ringtone',
+                                            style: GoogleFonts.poppins(),
+                                          ),
+                                          backgroundColor: success
+                                              ? Colors.green.withOpacity(0.8)
+                                              : Colors.red.withOpacity(0.8),
+                                          duration: const Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                              ),
+                              _buildAudioOptionItem(
+                                context,
+                                Icons.share_outlined,
+                                'Share',
+                                () async {
+                                  Navigator.pop(c);
+                                  final file = await widget
+                                      .videoAssets[_currentIndex]
+                                      .file;
+                                  if (file == null) return;
+                                  await Share.shareXFiles([
+                                    XFile(file.path),
+                                  ], text: 'Check out this audio!');
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
                 ),
-                onTap: () async {
-                  Navigator.pop(c);
-                  final file = await widget.videoAssets[_currentIndex].file;
-                  if (file == null) return;
-                  await Share.shareXFiles([
-                    XFile(file.path),
-                  ], text: 'Check out this audio!');
-                },
               ),
-            ],
+            ),
           ),
         );
       },
     );
   }
 
-  Future<void> _showSpeedSelect() async {
-    final speed = await showCupertinoModalPopup<double>(
-      context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: Text(
-          'Playback Speed',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        actions: _speedOptions
-            .map(
-              (s) => CupertinoActionSheetAction(
-                onPressed: () => Navigator.pop(context, s),
-                child: Text(
-                  '${s}x',
-                  style: TextStyle(
-                    color: s == _playbackSpeed ? Colors.blue : Colors.black,
-                    fontWeight: s == _playbackSpeed
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+  Widget _buildAudioOptionItem(
+    BuildContext context,
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
+    String? subtitle,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: const Color(0xFFCCD0CF), size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFCCD0CF),
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: const Color(0xFF9BA8AB),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ),
-            )
-            .toList(),
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel', style: Theme.of(context).textTheme.bodyLarge),
+                Icon(
+                  Icons.chevron_right,
+                  color: const Color(0xFF9BA8AB),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
-    if (speed != null) {
-      setState(() {
-        _playbackSpeed = speed;
-      });
-      player.setRate(speed);
-    }
+  }
+
+  void _showAudioPlaybackModeDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  Color(0xFF06151C),
+                  Color(0xFF0C1A24),
+                  Color(0xFF172734),
+                  Color(0xFF2F404D),
+                  Color(0xFF64727A),
+                  Color(0xFFCCD1CF),
+                ],
+                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF4A5C6A,
+                                  ).withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.repeat_outlined,
+                                  color: Color(0xFFCCD0CF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Playback Mode',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFCCD0CF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Options
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              _buildAudioPlaybackModeOption(
+                                context,
+                                'order',
+                                'Play in Order',
+                                Icons.playlist_play,
+                              ),
+                              _buildAudioPlaybackModeOption(
+                                context,
+                                'loop',
+                                'Loop Current',
+                                Icons.repeat,
+                              ),
+                              _buildAudioPlaybackModeOption(
+                                context,
+                                'shuffle',
+                                'Shuffle',
+                                Icons.shuffle,
+                              ),
+                              _buildAudioPlaybackModeOption(
+                                context,
+                                'stop',
+                                'Stop After Current',
+                                Icons.stop,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAudioPlaybackModeOption(
+    BuildContext context,
+    String value,
+    String title,
+    IconData icon,
+  ) {
+    final isSelected = _loopMode == value;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFF4A5C6A).withOpacity(0.4)
+            : Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFFCCD0CF).withOpacity(0.3)
+              : Colors.white.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            _setLoopMode(value);
+            Navigator.pop(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF).withOpacity(0.2)
+                        : Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF)
+                        : const Color(0xFF9BA8AB),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFCCD0CF),
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCCD0CF).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Color(0xFFCCD0CF),
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSpeedSelect() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  Color(0xFF06151C),
+                  Color(0xFF0C1A24),
+                  Color(0xFF172734),
+                  Color(0xFF2F404D),
+                  Color(0xFF64727A),
+                  Color(0xFFCCD1CF),
+                ],
+                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF4A5C6A,
+                                  ).withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.speed_outlined,
+                                  color: Color(0xFFCCD0CF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Playback Speed',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFCCD0CF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Speed options
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              for (double speed in _speedOptions)
+                                _buildSpeedOption(context, speed),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSpeedOption(BuildContext context, double speed) {
+    final isSelected = _playbackSpeed == speed;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFF4A5C6A).withOpacity(0.4)
+            : Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFFCCD0CF).withOpacity(0.3)
+              : Colors.white.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            setState(() {
+              _playbackSpeed = speed;
+            });
+            player.setRate(speed);
+            Navigator.pop(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF).withOpacity(0.2)
+                        : Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.speed_outlined,
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF)
+                        : const Color(0xFF9BA8AB),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    '${speed}x',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFCCD0CF),
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCCD0CF).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Color(0xFFCCD0CF),
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _shareCurrentVideo() async {
@@ -858,214 +1364,542 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     final file = await widget.videoAssets[_currentIndex].file;
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (c) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.audiotrack_outlined),
-                title: Text(
-                  'Audio Track',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(c);
-                  _showAudioTracksDialog(context);
-                },
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  Color(0xFF06151C),
+                  Color(0xFF0C1A24),
+                  Color(0xFF172734),
+                  Color(0xFF2F404D),
+                  Color(0xFF64727A),
+                  Color(0xFFCCD1CF),
+                ],
+                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
               ),
-              /*
-              ListTile(
-                leading: const Icon(Icons.cast),
-                title: const Text('Cast'),
-                onTap: () {
-                  Navigator.pop(c);
-                  _showCastDialog(context);
-                },
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
-*/
-              ListTile(
-                leading: const Icon(Icons.share_outlined),
-                title: Text(
-                  'Share',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                onTap: () async {
-                  Navigator.pop(c);
-                  await _shareCurrentVideo();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.content_cut_outlined),
-                title: Text(
-                  'Trim',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                onTap: () async {
-                  Navigator.pop(c);
-                  if (file != null) {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => VideoTrimScreen(originalFile: file),
-                      ),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, animation) =>
-                      ScaleTransition(scale: animation, child: child),
-                  child: Icon(
-                    _isFavourite
-                        ? Icons.star_outline_rounded
-                        : Icons.star_border,
-                    key: ValueKey(_isFavourite),
-                    color: const Color(0xFFCCD0CF),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF4A5C6A,
+                                  ).withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.more_vert,
+                                  color: Color(0xFFCCD0CF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Video Options',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFCCD0CF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Options
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              _buildOptionItem(
+                                context,
+                                Icons.audiotrack_outlined,
+                                'Audio Track',
+                                () {
+                                  Navigator.pop(c);
+                                  _showAudioTracksDialog(context);
+                                },
+                              ),
+                              _buildOptionItem(
+                                context,
+                                Icons.share_outlined,
+                                'Share',
+                                () async {
+                                  Navigator.pop(c);
+                                  await _shareCurrentVideo();
+                                },
+                              ),
+                              _buildOptionItem(
+                                context,
+                                Icons.content_cut_outlined,
+                                'Trim',
+                                () async {
+                                  Navigator.pop(c);
+                                  if (file != null) {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            VideoTrimScreen(originalFile: file),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              _buildOptionItem(
+                                context,
+                                _isFavourite
+                                    ? Icons.star_outline_rounded
+                                    : Icons.star_border,
+                                _isFavourite
+                                    ? 'Remove Favourite'
+                                    : 'Add Favourite',
+                                () {
+                                  Navigator.pop(c);
+                                  _toggleFavourite();
+                                },
+                                isAnimated: true,
+                                animatedKey: _isFavourite,
+                              ),
+                              _buildOptionItem(
+                                context,
+                                Icons.bookmark_outline,
+                                'Add Bookmark',
+                                () {
+                                  Navigator.pop(c);
+                                  _addBookmark();
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Bookmark added!',
+                                          style: GoogleFonts.poppins(),
+                                        ),
+                                        backgroundColor: Colors.green
+                                            .withOpacity(0.8),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              _buildOptionItem(
+                                context,
+                                Icons.vrpano_outlined,
+                                _vrMode ? 'Disable VR Mode' : 'Enable VR Mode',
+                                () {
+                                  Navigator.pop(c);
+                                  setState(() {
+                                    _vrMode = !_vrMode;
+                                  });
+                                },
+                              ),
+                              _buildOptionItem(
+                                context,
+                                Icons.flip_outlined,
+                                _mirrorMode
+                                    ? 'Disable Mirror Mode'
+                                    : 'Enable Mirror Mode',
+                                () {
+                                  Navigator.pop(c);
+                                  setState(() {
+                                    _mirrorMode = !_mirrorMode;
+                                  });
+                                },
+                              ),
+                              _buildOptionItem(
+                                context,
+                                Icons.repeat_outlined,
+                                'Playback Mode',
+                                () {
+                                  Navigator.pop(c);
+                                  _showPlaybackModeDialog(context);
+                                },
+                                subtitle: _loopMode == 'order'
+                                    ? 'Play in Order'
+                                    : _loopMode == 'loop'
+                                    ? 'Loop Current'
+                                    : _loopMode == 'shuffle'
+                                    ? 'Shuffle'
+                                    : 'Stop After Current',
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
-                title: Text(
-                  _isFavourite ? 'Remove Favourite' : 'Add Favourite',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(c);
-                  _toggleFavourite();
-                },
               ),
-              ListTile(
-                leading: const Icon(Icons.bookmark_outline),
-                title: Text(
-                  'Add Bookmark',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(c);
-                  _addBookmark();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Bookmark added!')),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  _vrMode ? Icons.vrpano_outlined : Icons.vrpano_outlined,
-                ),
-                title: Text(
-                  _vrMode ? 'Disable VR Mode' : 'Enable VR Mode',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(c);
-                  setState(() {
-                    _vrMode = !_vrMode;
-                  });
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  _mirrorMode ? Icons.flip_outlined : Icons.flip_outlined,
-                ),
-                title: Text(
-                  _mirrorMode ? 'Disable Mirror Mode' : 'Enable Mirror Mode',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(c);
-                  setState(() {
-                    _mirrorMode = !_mirrorMode;
-                  });
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.repeat_outlined),
-                title: Text(
-                  'Playback Mode',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                subtitle: Text(
-                  _loopMode == 'order'
-                      ? 'Play in Order'
-                      : _loopMode == 'loop'
-                      ? 'Loop Current'
-                      : _loopMode == 'shuffle'
-                      ? 'Shuffle'
-                      : 'Stop After Current',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(
-                        'Playback Mode',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          RadioListTile<String>(
-                            value: 'order',
-                            groupValue: _loopMode,
-                            title: Text(
-                              'Play in Order',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            onChanged: (v) {
-                              _setLoopMode('order');
-                              Navigator.pop(context);
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'loop',
-                            groupValue: _loopMode,
-                            title: Text(
-                              'Loop Current',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            onChanged: (v) {
-                              _setLoopMode('loop');
-                              Navigator.pop(context);
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'shuffle',
-                            groupValue: _loopMode,
-                            title: Text(
-                              'Shuffle',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            onChanged: (v) {
-                              _setLoopMode('shuffle');
-                              Navigator.pop(context);
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'stop',
-                            groupValue: _loopMode,
-                            title: Text(
-                              'Stop After Current',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            onChanged: (v) {
-                              _setLoopMode('stop');
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildOptionItem(
+    BuildContext context,
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
+    String? subtitle,
+    bool isAnimated = false,
+    bool? animatedKey,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: isAnimated
+                      ? AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          transitionBuilder: (child, animation) =>
+                              ScaleTransition(scale: animation, child: child),
+                          child: Icon(
+                            icon,
+                            key: ValueKey(animatedKey),
+                            color: const Color(0xFFCCD0CF),
+                            size: 20,
+                          ),
+                        )
+                      : Icon(icon, color: const Color(0xFFCCD0CF), size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFCCD0CF),
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: const Color(0xFF9BA8AB),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: const Color(0xFF9BA8AB),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPlaybackModeDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  Color(0xFF06151C),
+                  Color(0xFF0C1A24),
+                  Color(0xFF172734),
+                  Color(0xFF2F404D),
+                  Color(0xFF64727A),
+                  Color(0xFFCCD1CF),
+                ],
+                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF4A5C6A,
+                                  ).withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.repeat_outlined,
+                                  color: Color(0xFFCCD0CF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Playback Mode',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFCCD0CF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Options
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              _buildPlaybackModeOption(
+                                context,
+                                'order',
+                                'Play in Order',
+                                Icons.playlist_play,
+                              ),
+                              _buildPlaybackModeOption(
+                                context,
+                                'loop',
+                                'Loop Current',
+                                Icons.repeat,
+                              ),
+                              _buildPlaybackModeOption(
+                                context,
+                                'shuffle',
+                                'Shuffle',
+                                Icons.shuffle,
+                              ),
+                              _buildPlaybackModeOption(
+                                context,
+                                'stop',
+                                'Stop After Current',
+                                Icons.stop,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlaybackModeOption(
+    BuildContext context,
+    String value,
+    String title,
+    IconData icon,
+  ) {
+    final isSelected = _loopMode == value;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFF4A5C6A).withOpacity(0.4)
+            : Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFFCCD0CF).withOpacity(0.3)
+              : Colors.white.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            _setLoopMode(value);
+            Navigator.pop(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF).withOpacity(0.2)
+                        : Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF)
+                        : const Color(0xFF9BA8AB),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFCCD0CF),
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCCD0CF).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Color(0xFFCCD0CF),
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1073,45 +1907,232 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     final List<AudioTrack> audioTracks = player.state.tracks.audio;
     final AudioTrack activeTrack = player.state.track.audio;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Select Audio Track',
-          style: Theme.of(context).textTheme.titleLarge,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  Color(0xFF06151C),
+                  Color(0xFF0C1A24),
+                  Color(0xFF172734),
+                  Color(0xFF2F404D),
+                  Color(0xFF64727A),
+                  Color(0xFFCCD1CF),
+                ],
+                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF4A5C6A,
+                                  ).withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.audiotrack,
+                                  color: Color(0xFFCCD0CF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Select Audio Track',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFCCD0CF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Audio tracks
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              for (
+                                int index = 0;
+                                index < audioTracks.length;
+                                index++
+                              )
+                                _buildAudioTrackOption(
+                                  context,
+                                  audioTracks[index],
+                                  activeTrack,
+                                  index,
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAudioTrackOption(
+    BuildContext context,
+    AudioTrack track,
+    AudioTrack activeTrack,
+    int index,
+  ) {
+    final title = track.title ?? track.id;
+    final language = track.language;
+    final displayText = language != null ? '$title ($language)' : title;
+    final isSelected = track == activeTrack;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFF4A5C6A).withOpacity(0.4)
+            : Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFFCCD0CF).withOpacity(0.3)
+              : Colors.white.withOpacity(0.1),
+          width: 1,
         ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: audioTracks.length,
-            itemBuilder: (context, index) {
-              final track = audioTracks[index];
-              final title = track.title ?? track.id;
-              final language = track.language;
-              final displayText = language != null
-                  ? '$title ($language)'
-                  : title;
-              return RadioListTile<AudioTrack>(
-                title: Text(displayText),
-                value: track,
-                groupValue: activeTrack,
-                onChanged: (selectedTrack) {
-                  if (selectedTrack != null) {
-                    player.setAudioTrack(selectedTrack);
-                    Navigator.pop(context);
-                  }
-                },
-              );
-            },
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            player.setAudioTrack(track);
+            Navigator.pop(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF).withOpacity(0.2)
+                        : Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.audiotrack,
+                    color: isSelected
+                        ? const Color(0xFFCCD0CF)
+                        : const Color(0xFF9BA8AB),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayText,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFCCD0CF),
+                        ),
+                      ),
+                      if (language != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Language: $language',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: const Color(0xFF9BA8AB),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCCD0CF).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Color(0xFFCCD0CF),
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: Theme.of(context).textTheme.bodyLarge),
-          ),
-        ],
       ),
     );
   }
@@ -1329,7 +2350,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                   ),
                                   child: Text(
                                     'Seek: ${_seekOffsetSeconds > 0 ? '+' : ''}${_seekOffsetSeconds.round()}s',
-                                    style: const TextStyle(
+                                    style: GoogleFonts.poppins(
                                       color: Colors.white,
                                       fontSize: 16,
                                     ),
@@ -1359,7 +2380,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                     ),
                                     Text(
                                       '${(_currentVolume * 100).round()}%',
-                                      style: const TextStyle(
+                                      style: GoogleFonts.poppins(
                                         color: Colors.white,
                                         fontSize: 16,
                                       ),
@@ -1390,7 +2411,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                     ),
                                     Text(
                                       '${(_currentBrightness * 100).round()}%',
-                                      style: const TextStyle(
+                                      style: GoogleFonts.poppins(
                                         color: Colors.white,
                                         fontSize: 16,
                                       ),
@@ -1416,7 +2437,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                   ),
                                   child: Text(
                                     _aspectModeOverlayText!,
-                                    style: const TextStyle(
+                                    style: GoogleFonts.poppins(
                                       color: Colors.white,
                                       fontSize: 16,
                                     ),
@@ -1512,7 +2533,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                 _formatDuration(
                                                   player.state.position,
                                                 ),
-                                                style: const TextStyle(
+                                                style: GoogleFonts.poppins(
                                                   color: Colors.white,
                                                   fontSize: 12,
                                                 ),
@@ -1545,7 +2566,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                 _formatDuration(
                                                   player.state.duration,
                                                 ),
-                                                style: const TextStyle(
+                                                style: GoogleFonts.poppins(
                                                   color: Colors.white,
                                                   fontSize: 12,
                                                 ),

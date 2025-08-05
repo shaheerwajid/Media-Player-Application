@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/scheduler.dart';
 import '../services/native_audio_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AudioScreen extends StatefulWidget {
   final bool isAudioPlayerReady;
@@ -108,7 +109,7 @@ class _AudioScreenState extends State<AudioScreen>
                   ),
                   label: Text(
                     'Switch to Video',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
@@ -125,7 +126,7 @@ class _AudioScreenState extends State<AudioScreen>
                   ),
                   label: Text(
                     'Equalizer',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       color: Theme.of(context).colorScheme.onSecondary,
                     ),
                   ),
@@ -211,7 +212,7 @@ class _AudioScreenState extends State<AudioScreen>
                 Text(
                   '${widget.formatDuration(Duration(milliseconds: _sliderValue.toInt()))} / '
                   '${widget.formatDuration(Duration(milliseconds: widget.totalDurationMs ?? 0))}',
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
@@ -284,7 +285,7 @@ class _AudioScreenState extends State<AudioScreen>
                     children: [
                       Text(
                         'Equalizer',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -294,7 +295,7 @@ class _AudioScreenState extends State<AudioScreen>
                         children: [
                           Text(
                             'ON',
-                            style: TextStyle(
+                            style: GoogleFonts.poppins(
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
@@ -350,7 +351,7 @@ class _AudioScreenState extends State<AudioScreen>
                     children: [
                       Text(
                         'Reverb',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
@@ -359,7 +360,7 @@ class _AudioScreenState extends State<AudioScreen>
                         dropdownColor: Theme.of(
                           context,
                         ).colorScheme.surfaceVariant,
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                         items: [
@@ -392,7 +393,7 @@ class _AudioScreenState extends State<AudioScreen>
                     children: [
                       Text(
                         'BassBooster',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
@@ -416,7 +417,7 @@ class _AudioScreenState extends State<AudioScreen>
                     children: [
                       Text(
                         'Virtualizer',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:media_kit/media_kit.dart';
 
 class BottomControls extends StatefulWidget {
@@ -153,7 +154,7 @@ class _BottomControlsState extends State<BottomControls> {
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: Text(
                 widget.formatDuration(position),
-                style: const TextStyle(color: Colors.white),
+                style: GoogleFonts.poppins(color: Colors.white),
               ),
             ),
             Expanded(
@@ -235,7 +236,7 @@ class _BottomControlsState extends State<BottomControls> {
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: Text(
                 widget.formatDuration(duration),
-                style: const TextStyle(color: Colors.white),
+                style: GoogleFonts.poppins(color: Colors.white),
               ),
             ),
           ],

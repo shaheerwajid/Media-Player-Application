@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 import '../services/audio_service.dart';
@@ -7,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../main.dart';
 import 'dart:ui';
 import '../widgets/skeleton_media_card.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class MediaFileCard extends StatefulWidget {
   final IconData icon;
@@ -203,6 +205,16 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
   String? _selectedPlaylist;
   late SharedPreferences _prefs;
 
+  // Filter tabs state
+  int _selectedTabIndex =
+      0; // 0: All Songs, 1: Playlists, 2: Folder, 3: Album, 4: Artist
+  Map<String, List<AssetEntity>> _albumMap = {};
+  Map<String, List<AssetEntity>> _artistMap = {};
+  List<String> _albumList = [];
+  List<String> _artistList = [];
+  String? _selectedAlbum;
+  String? _selectedArtist;
+
   @override
   void initState() {
     super.initState();
@@ -227,23 +239,74 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
 
   Future<void> _initPrefs() async {
     _prefs = await SharedPreferences.getInstance();
+
+    if (!mounted) return; // Early return if widget is disposed
+
     _loadFavourites();
     _loadPlaylists();
     _deduplicateAllPlaylists();
   }
 
   void _loadFavourites() {
+    if (!mounted) return; // Early return if widget is disposed
+
     final favs = _prefs.getStringList('audio_favourites') ?? [];
-    setState(() {
-      _favourites = favs.toSet();
-    });
+    if (mounted) {
+      setState(() {
+        _favourites = favs.toSet();
+      });
+    }
   }
 
   void _loadPlaylists() {
+    if (!mounted) return; // Early return if widget is disposed
+
     final keys = _prefs.getStringList('audio_playlists') ?? [];
-    setState(() {
-      _playlists = keys;
-    });
+    if (mounted) {
+      setState(() {
+        _playlists = keys;
+      });
+    }
+  }
+
+  void _buildAlbumMap(List<AssetEntity> audios) {
+    if (!mounted) return; // Early return if widget is disposed
+
+    final Map<String, List<AssetEntity>> albumMap = {};
+    for (final audio in audios) {
+      // For now, use a placeholder since AssetEntity doesn't have album property
+      final album = 'Unknown Album';
+      if (!albumMap.containsKey(album)) {
+        albumMap[album] = [];
+      }
+      albumMap[album]!.add(audio);
+    }
+    if (mounted) {
+      setState(() {
+        _albumMap = albumMap;
+        _albumList = albumMap.keys.toList()..sort();
+      });
+    }
+  }
+
+  void _buildArtistMap(List<AssetEntity> audios) {
+    if (!mounted) return; // Early return if widget is disposed
+
+    final Map<String, List<AssetEntity>> artistMap = {};
+    for (final audio in audios) {
+      // For now, use a placeholder since AssetEntity doesn't have artist property
+      final artist = 'Unknown Artist';
+      if (!artistMap.containsKey(artist)) {
+        artistMap[artist] = [];
+      }
+      artistMap[artist]!.add(audio);
+    }
+    if (mounted) {
+      setState(() {
+        _artistMap = artistMap;
+        _artistList = artistMap.keys.toList()..sort();
+      });
+    }
   }
 
   List<AssetEntity> _getPlaylistAudios(String playlist) {
@@ -265,44 +328,1514 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
     return uniqueAudios;
   }
 
+  List<AssetEntity> _getFilteredAudios() {
+    switch (_selectedTabIndex) {
+      case 0: // All Songs
+        return _audioAssets;
+      case 1: // Playlists
+        if (_selectedPlaylist != null) {
+          return _getPlaylistAudios(_selectedPlaylist!);
+        }
+        return [];
+      case 2: // Folder
+        if (_selectedFolder != null && _folderMap[_selectedFolder!] != null) {
+          return _folderMap[_selectedFolder!]!;
+        }
+        return [];
+      case 3: // Album
+        if (_selectedAlbum != null && _albumMap[_selectedAlbum!] != null) {
+          return _albumMap[_selectedAlbum!]!;
+        }
+        return [];
+      case 4: // Artist
+        if (_selectedArtist != null && _artistMap[_selectedArtist!] != null) {
+          return _artistMap[_selectedArtist!]!;
+        }
+        return [];
+      default:
+        return _audioAssets;
+    }
+  }
+
   void _showPlaylistSelectDialog() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (c) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.clear_outlined),
-                title: const Text('All Audio'),
-                onTap: () {
-                  setState(() => _selectedPlaylist = null);
-                  Navigator.pop(c);
-                },
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  Color(0xFF06151C),
+                  Color(0xFF0C1A24),
+                  Color(0xFF172734),
+                  Color(0xFF2F404D),
+                  Color(0xFF64727A),
+                  Color(0xFFCCD1CF),
+                ],
+                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
               ),
-              for (final playlist in _playlists)
-                ListTile(
-                  leading: const Icon(Icons.queue_music_outlined),
-                  title: Text(playlist),
-                  onTap: () {
-                    setState(() => _selectedPlaylist = playlist);
-                    Navigator.pop(c);
-                  },
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF4A5C6A,
+                                  ).withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.queue_music,
+                                  color: Color(0xFFCCD0CF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Select Playlist',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFCCD0CF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Options
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              _buildPlaylistOption(
+                                c,
+                                Icons.clear_outlined,
+                                'All Audio',
+                                'Show all audio files',
+                                () {
+                                  setState(() => _selectedPlaylist = null);
+                                  Navigator.pop(c);
+                                },
+                              ),
+                              for (final playlist in _playlists)
+                                _buildPlaylistOption(
+                                  c,
+                                  Icons.queue_music_outlined,
+                                  playlist,
+                                  'Playlist',
+                                  () {
+                                    setState(
+                                      () => _selectedPlaylist = playlist,
+                                    );
+                                    Navigator.pop(c);
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
                 ),
-            ],
+              ),
+            ),
           ),
         );
       },
     );
   }
 
+  Widget _buildPlaylistOption(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: const Color(0xFF9BA8AB), size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFCCD0CF),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: const Color(0xFF9BA8AB),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Color(0xFF9BA8AB),
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCreatePlaylistDialog() {
+    final TextEditingController playlistNameController =
+        TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  Color(0xFF06151C),
+                  Color(0xFF0C1A24),
+                  Color(0xFF172734),
+                  Color(0xFF2F404D),
+                  Color(0xFF64727A),
+                  Color(0xFFCCD1CF),
+                ],
+                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF4A5C6A,
+                                  ).withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.playlist_add,
+                                  color: Color(0xFFCCD0CF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Create New Playlist',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFCCD0CF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Input field
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: TextField(
+                            controller: playlistNameController,
+                            autofocus: true,
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFFCCD0CF),
+                              fontSize: 16,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Enter playlist name',
+                              hintStyle: GoogleFonts.poppins(
+                                color: const Color(0xFF9BA8AB),
+                                fontSize: 16,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF4A5C6A),
+                                  width: 1,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF4A5C6A),
+                                  width: 1,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFCCD0CF),
+                                  width: 2,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: const Color(
+                                0xFF1A2A3A,
+                              ).withOpacity(0.5),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Buttons
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.1),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Cancel',
+                                            style: GoogleFonts.poppins(
+                                              color: const Color(0xFF9BA8AB),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF4A5C6A,
+                                    ).withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFFCCD0CF,
+                                      ).withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () {
+                                        final playlistName =
+                                            playlistNameController.text.trim();
+                                        if (playlistName.isNotEmpty) {
+                                          _createPlaylist(playlistName);
+                                          Navigator.of(context).pop();
+                                        }
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Create',
+                                            style: GoogleFonts.poppins(
+                                              color: const Color(0xFFCCD0CF),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _createPlaylist(String name) {
+    if (!_playlists.contains(name)) {
+      setState(() {
+        _playlists.add(name);
+      });
+      _prefs.setStringList('audio_playlists', _playlists);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Playlist "$name" created successfully!',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: const Color(0xFF4A5C6A),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Show error if playlist already exists
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Playlist "$name" already exists!',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: Colors.red.withOpacity(0.8),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Widget _buildFilterTab(String label, int index) {
+    final isSelected = _selectedTabIndex == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTabIndex = index;
+          // Reset selections when switching tabs
+          if (label == 'Folder') {
+            _selectedFolder = null;
+          } else if (label == 'Playlists') {
+            _selectedPlaylist = null;
+          } else if (label == 'Album') {
+            _selectedAlbum = null;
+          } else if (label == 'Artist') {
+            _selectedArtist = null;
+          }
+        });
+      },
+      child: Container(
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            style: GoogleFonts.poppins(
+              color: isSelected
+                  ? const Color(0xFFCCD0CF)
+                  : const Color(0xFF9BA8AB),
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 10,
+            ),
+            child: Text(label),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaylistCard(String playlist, int count, int index) {
+    final overlayColor = index % 2 == 0
+        ? const Color(0xFF4A5C6A)
+        : const Color(0xFF9BA8AB);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPlaylist = playlist;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: overlayColor.withOpacity(0.28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF06141B).withOpacity(0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+          border: Border.all(
+            width: 1.2,
+            style: BorderStyle.solid,
+            color: Colors.white.withOpacity(0.10),
+          ),
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                children: [
+                  // Icon
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white.withOpacity(0.18),
+                    ),
+                    child: Icon(
+                      playlist == 'Favourite Songs'
+                          ? Icons.favorite
+                          : Icons.queue_music_outlined,
+                      size: 24,
+                      color: const Color(0xFFCCD0CF),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Text content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          playlist == 'Favourite Songs' ? 'Favorite' : playlist,
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFFCCD0CF),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$count Song${count == 1 ? '' : 's'}',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFF9BA8AB),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlbumCard(String album, int count, int index) {
+    final overlayColor = index % 2 == 0
+        ? const Color(0xFF4A5C6A)
+        : const Color(0xFF9BA8AB);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedAlbum = album;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: overlayColor.withOpacity(0.28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF06141B).withOpacity(0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+          border: Border.all(
+            width: 1.2,
+            style: BorderStyle.solid,
+            color: Colors.white.withOpacity(0.10),
+          ),
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.album_outlined,
+                    size: 28,
+                    color: const Color(0xFFCCD0CF),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    album,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFCCD0CF),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$count song${count == 1 ? '' : 's'}',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF9BA8AB),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArtistCard(String artist, int count, int index) {
+    final overlayColor = index % 2 == 0
+        ? const Color(0xFF4A5C6A)
+        : const Color(0xFF9BA8AB);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedArtist = artist;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: overlayColor.withOpacity(0.28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF06141B).withOpacity(0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+          border: Border.all(
+            width: 1.2,
+            style: BorderStyle.solid,
+            color: Colors.white.withOpacity(0.10),
+          ),
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.person_outline,
+                    size: 28,
+                    color: const Color(0xFFCCD0CF),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    artist,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFCCD0CF),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$count song${count == 1 ? '' : 's'}',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF9BA8AB),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabContent() {
+    switch (_selectedTabIndex) {
+      case 0: // All Songs
+        return _buildAudioList(_getFilteredAudios());
+      case 1: // Playlists
+        if (_selectedPlaylist == null) {
+          return _buildPlaylistGrid();
+        } else {
+          return _buildPlaylistSongsList();
+        }
+      case 2: // Folder
+        if (_selectedFolder == null) {
+          return _buildFolderGrid();
+        } else {
+          return _buildFolderSongsList();
+        }
+      case 3: // Album
+        if (_selectedAlbum == null) {
+          return _buildAlbumGrid();
+        } else {
+          return _buildAlbumSongsList();
+        }
+      case 4: // Artist
+        if (_selectedArtist == null) {
+          return _buildArtistGrid();
+        } else {
+          return _buildArtistSongsList();
+        }
+      default:
+        return _buildAudioList(_getFilteredAudios());
+    }
+  }
+
+  Widget _buildAudioList(List<AssetEntity> audios) {
+    if (audios.isEmpty) {
+      return Center(
+        child: Text(
+          'No songs found.',
+          style: GoogleFonts.poppins(color: Colors.white),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      itemCount: audios.length,
+      itemBuilder: (context, index) {
+        final asset = audios[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: _AnimatedMediaFileCard(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 18,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    color: Colors.white.withOpacity(0.13),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF06141B).withOpacity(0.18),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                    border: Border.all(
+                      width: 1.2,
+                      style: BorderStyle.solid,
+                      color: Colors.white.withOpacity(0.18),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Thumbnail
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white.withOpacity(0.18),
+                        ),
+                        child: Icon(
+                          Icons.music_note_outlined,
+                          size: 32,
+                          color: const Color(0xFFCCD0CF),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              asset.title ?? 'Unknown',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFFCCD0CF),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Unknown Album',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF9BA8AB),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Favourite icon
+                      IconButton(
+                        icon: Icon(
+                          _favourites.contains(asset.id)
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: _favourites.contains(asset.id)
+                              ? Colors.amber
+                              : const Color(0xFF9BA8AB),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            if (_favourites.contains(asset.id)) {
+                              _favourites.remove(asset.id);
+                              _prefs.setStringList(
+                                'audio_favourites',
+                                _favourites.toList(),
+                              );
+                            } else {
+                              _favourites.add(asset.id);
+                              _prefs.setStringList(
+                                'audio_favourites',
+                                _favourites.toList(),
+                              );
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            onTap: () {
+              final fullList = audios;
+              final initialIndex = fullList.indexWhere((a) => a.id == asset.id);
+              if (initialIndex != -1) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AudioPlayerScreen(
+                      audios: fullList,
+                      initialIndex: initialIndex,
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlaylistGrid() {
+    // Create a list that includes "Favourite Songs" plus user playlists
+    final allPlaylists = ['Favourite Songs', ..._playlists];
+
+    return Column(
+      children: [
+        // Header with title and plus icon
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Playlist(${allPlaylists.length})',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  _showCreatePlaylistDialog();
+                },
+                icon: const Icon(Icons.add, color: Colors.white, size: 24),
+              ),
+            ],
+          ),
+        ),
+        // Playlist list
+        Expanded(
+          child: allPlaylists.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'No playlists found.',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF9BA8AB),
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Create playlists to organize your songs.',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF9BA8AB),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  itemCount: allPlaylists.length,
+                  itemBuilder: (context, index) {
+                    final playlist = allPlaylists[index];
+                    int count;
+                    if (playlist == 'Favourite Songs') {
+                      count = _favourites.length;
+                    } else {
+                      count = _getPlaylistAudios(playlist).length;
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: _buildPlaylistCard(playlist, count, index),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlaylistSongsList() {
+    List<AssetEntity> playlistAudios;
+
+    if (_selectedPlaylist == 'Favourite Songs') {
+      playlistAudios = _audioAssets
+          .where((audio) => _favourites.contains(audio.id))
+          .toList();
+    } else {
+      playlistAudios = _selectedPlaylist != null
+          ? _getPlaylistAudios(_selectedPlaylist!)
+          : <AssetEntity>[];
+    }
+
+    if (playlistAudios.isEmpty) {
+      return Center(
+        child: Text(
+          'No songs in this playlist.',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF9BA8AB),
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        _buildBackToPlaylistsCard(),
+        Expanded(child: _buildAudioList(playlistAudios)),
+      ],
+    );
+  }
+
+  Widget _buildBackToPlaylistsCard() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPlaylist = null;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF11212D).withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF253745).withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.arrow_back_outlined,
+              color: Color(0xFFCCD0CF),
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Back to Playlists',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFCCD0CF),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFolderGrid() {
+    if (_folderList.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'No folders found.',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF9BA8AB),
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Debug: _showFolders=$_showFolders, _folderList.length=${_folderList.length}',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF9BA8AB),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: _folderList.length,
+      itemBuilder: (context, index) {
+        final folder = _folderList[index];
+        final count = _folderMap[folder]?.length ?? 0;
+        return _buildFolderCard(folder, count, index);
+      },
+    );
+  }
+
+  Widget _buildFolderCard(String folder, int count, int index) {
+    final overlayColor = index % 2 == 0
+        ? const Color(0xFF4A5C6A)
+        : const Color(0xFF9BA8AB);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFolder = folder;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: overlayColor.withOpacity(0.28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF06141B).withOpacity(0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+          border: Border.all(
+            width: 1.2,
+            style: BorderStyle.solid,
+            color: Colors.white.withOpacity(0.10),
+          ),
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.folder_outlined,
+                    size: 28,
+                    color: const Color(0xFFCCD0CF),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    folder.split(Platform.pathSeparator).last,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFCCD0CF),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$count song${count == 1 ? '' : 's'}',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF9BA8AB),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFolderSongsList() {
+    final folderAudios =
+        _selectedFolder != null && _folderMap[_selectedFolder!] != null
+        ? _folderMap[_selectedFolder!]!
+        : <AssetEntity>[];
+
+    if (folderAudios.isEmpty) {
+      return Center(
+        child: Text(
+          'No songs in this folder.',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF9BA8AB),
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        _buildBackToFoldersCard(),
+        Expanded(child: _buildAudioList(folderAudios)),
+      ],
+    );
+  }
+
+  Widget _buildBackToFoldersCard() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFolder = null;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF11212D).withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF253745).withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.arrow_back_outlined,
+              color: Color(0xFFCCD0CF),
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Back to Folders',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFCCD0CF),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlbumGrid() {
+    if (_albumList.isEmpty) {
+      return Center(
+        child: Text(
+          'No albums found.',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF9BA8AB),
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: _albumList.length,
+      itemBuilder: (context, index) {
+        final album = _albumList[index];
+        final count = _albumMap[album]?.length ?? 0;
+        return _buildAlbumCard(album, count, index);
+      },
+    );
+  }
+
+  Widget _buildAlbumSongsList() {
+    final albumAudios =
+        _selectedAlbum != null && _albumMap[_selectedAlbum!] != null
+        ? _albumMap[_selectedAlbum!]!
+        : <AssetEntity>[];
+
+    if (albumAudios.isEmpty) {
+      return Center(
+        child: Text(
+          'No songs in this album.',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF9BA8AB),
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        _buildBackToAlbumsCard(),
+        Expanded(child: _buildAudioList(albumAudios)),
+      ],
+    );
+  }
+
+  Widget _buildBackToAlbumsCard() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedAlbum = null;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF11212D).withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF253745).withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.arrow_back_outlined,
+              color: Color(0xFFCCD0CF),
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Back to Albums',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFCCD0CF),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArtistGrid() {
+    if (_artistList.isEmpty) {
+      return Center(
+        child: Text(
+          'No artists found.',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF9BA8AB),
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: _artistList.length,
+      itemBuilder: (context, index) {
+        final artist = _artistList[index];
+        final count = _artistMap[artist]?.length ?? 0;
+        return _buildArtistCard(artist, count, index);
+      },
+    );
+  }
+
+  Widget _buildArtistSongsList() {
+    final artistAudios =
+        _selectedArtist != null && _artistMap[_selectedArtist!] != null
+        ? _artistMap[_selectedArtist!]!
+        : <AssetEntity>[];
+
+    if (artistAudios.isEmpty) {
+      return Center(
+        child: Text(
+          'No songs by this artist.',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF9BA8AB),
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        _buildBackToArtistsCard(),
+        Expanded(child: _buildAudioList(artistAudios)),
+      ],
+    );
+  }
+
+  Widget _buildBackToArtistsCard() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedArtist = null;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF11212D).withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF253745).withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.arrow_back_outlined,
+              color: Color(0xFFCCD0CF),
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Back to Artists',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFCCD0CF),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _fetchAllAudios() async {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _loading = true;
       });
+    }
+
     final result = await AudioService.fetchAllAudios();
+
+    if (!mounted) return; // Early return if widget is disposed
+
     if (result.permissionState == PermissionState.authorized ||
         result.permissionState == PermissionState.limited) {
       // Ensure unique audio IDs
@@ -314,17 +1847,31 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
           uniqueAudios.add(a);
         }
       }
-      if (mounted)
+
+      if (mounted) {
         setState(() {
           _audioAssets = uniqueAudios;
           _loading = false;
         });
-      _buildFolderMap(result.audios);
+      }
+
+      if (mounted) {
+        _buildFolderMap(result.audios);
+        _buildAlbumMap(result.audios);
+        _buildArtistMap(result.audios);
+      }
     } else {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Storage permission required.')),
+          SnackBar(
+            content: Text(
+              'Storage permission required.',
+              style: GoogleFonts.poppins(),
+            ),
+          ),
         );
       }
       if (result.permissionState == PermissionState.denied) {
@@ -335,22 +1882,29 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
 
   void _buildFolderMap(List<AssetEntity> assets) async {
     final Map<String, List<AssetEntity>> folderMap = {};
+
     for (final asset in assets) {
+      if (!mounted) return; // Early return if widget is disposed
+
       final file = await asset.file;
       if (file != null) {
         final dir = file.parent.path;
         folderMap.putIfAbsent(dir, () => []).add(asset);
       }
     }
-    if (mounted)
+
+    if (mounted) {
       setState(() {
         _folderMap = folderMap;
         _folderList = folderMap.keys.toList();
       });
+    }
   }
 
   void _startSearch() {
-    if (mounted) setState(() => _isSearching = true);
+    if (mounted) {
+      setState(() => _isSearching = true);
+    }
   }
 
   void _stopSearch() {
@@ -382,9 +1936,11 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
   @override
   void didPopNext() {
     // Called when coming back to this screen
-    _loadFavourites();
-    _loadPlaylists();
-    setState(() {});
+    if (mounted) {
+      _loadFavourites();
+      _loadPlaylists();
+      setState(() {});
+    }
   }
 
   @override
@@ -431,16 +1987,23 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF06141B), Color(0xFF11212D), Color(0xFF4A5C6A)],
-              stops: [0.0, 0.5, 1.0],
+              begin: Alignment.bottomLeft,
+              end: Alignment.topRight,
+              colors: [
+                Color(0xFF06151C),
+                Color(0xFF0C1A24),
+                Color(0xFF172734),
+                Color(0xFF2F404D),
+                Color(0xFF64727A),
+                Color(0xFFCCD1CF),
+              ],
+              stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
             ),
           ),
         ),
         foregroundColor: const Color(0xFFCCD0CF),
         centerTitle: true,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: GoogleFonts.poppins(
           fontSize: 26,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.1,
@@ -465,16 +2028,17 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
             colors: [
-              Color(0xFF06141B),
-              Color(0xFF11212D),
-              Color(0xFF253745),
-              Color(0xFF4A5C6A),
-              Color(0xFF9BA8AB),
+              Color(0xFF06151C),
+              Color(0xFF0C1A24),
+              Color(0xFF172734),
+              Color(0xFF2F404D),
+              Color(0xFF64727A),
+              Color(0xFFCCD1CF),
             ],
-            stops: [0.0, 0.2, 0.45, 0.75, 1.0],
+            stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
           ),
         ),
         child: Padding(
@@ -485,332 +2049,85 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
               ? const SkeletonList(itemCount: 8)
               : Column(
                   children: [
+                    // Filter Tabs
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 8,
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                      child: Row(
-                        children: [
-                          ElevatedButton.icon(
-                            icon: const Icon(
-                              Icons.queue_music_outlined,
-                              color: Color(0xFF4A5C6A),
-                            ),
-                            label: const Text('Playlist'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(
-                                0xFF9BA8AB,
-                              ).withOpacity(0.85),
-                              foregroundColor: const Color(0xFF06141B),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              shadowColor: const Color(
-                                0xFF06141B,
-                              ).withOpacity(0.18),
-                              elevation: 4,
-                            ),
-                            onPressed: _showPlaylistSelectDialog,
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1,
                           ),
-                          const SizedBox(width: 12),
-                          ElevatedButton.icon(
-                            icon: Icon(
-                              _showFolders
-                                  ? Icons.list_outlined
-                                  : Icons.folder_outlined,
-                              color: const Color(0xFF4A5C6A),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                            label: Text(_showFolders ? 'All Audio' : 'Folders'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(
-                                0xFF4A5C6A,
-                              ).withOpacity(0.85),
-                              foregroundColor: const Color(0xFFCCD0CF),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              shadowColor: const Color(
-                                0xFF06141B,
-                              ).withOpacity(0.18),
-                              elevation: 4,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _showFolders = !_showFolders;
-                                _selectedFolder = null;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: _showFolders
-                          ? _selectedFolder == null
-                                ? GridView.builder(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 8,
+                          ],
+                        ),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final tabWidth = constraints.maxWidth / 5;
+                            return Stack(
+                              children: [
+                                // Sliding indicator
+                                AnimatedPositioned(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                  left: _selectedTabIndex * tabWidth,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    width: tabWidth,
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF4A5C6A,
+                                      ).withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(24),
+                                      border: Border.all(
+                                        color: const Color(
+                                          0xFFCCD0CF,
+                                        ).withOpacity(0.3),
+                                        width: 1,
+                                      ),
                                     ),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2,
-                                          childAspectRatio: 1.05,
-                                        ),
-                                    itemCount: _folderList.length,
-                                    itemBuilder: (context, index) {
-                                      final folder = _folderList[index];
-                                      final count =
-                                          _folderMap[folder]?.length ?? 0;
-                                      final overlayColor = index % 2 == 0
-                                          ? const Color(0xFF4A5C6A)
-                                          : const Color(0xFF9BA8AB);
-                                      return _AnimatedMediaFileCard(
-                                        child: MediaFileCard(
-                                          icon: Icons.folder_outlined,
-                                          title: folder
-                                              .split(Platform.pathSeparator)
-                                              .last,
-                                          subtitle:
-                                              '$count audio file${count == 1 ? '' : 's'}',
-                                          isFavourite: false,
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedFolder = folder;
-                                            });
-                                          },
-                                          overlayColor: overlayColor,
-                                        ),
-                                        onTap: () {
-                                          setState(() {
-                                            _selectedFolder = folder;
-                                          });
-                                        },
-                                      );
-                                    },
-                                  )
-                                : Column(
-                                    children: [
-                                      ListTile(
-                                        leading: const Icon(
-                                          Icons.arrow_back_outlined,
-                                          color: Colors.white,
-                                        ),
-                                        title: const Text(
-                                          'Back to Folders',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                        onTap: () {
-                                          setState(() {
-                                            _selectedFolder = null;
-                                          });
-                                        },
-                                      ),
-                                      Expanded(
-                                        child: GridView.builder(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 8,
-                                          ),
-                                          gridDelegate:
-                                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                                crossAxisCount: 2,
-                                                childAspectRatio: 1.05,
-                                              ),
-                                          itemCount: folderAudios.length,
-                                          itemBuilder: (context, index) {
-                                            final asset = folderAudios[index];
-                                            final overlayColor = index % 2 == 0
-                                                ? const Color(0xFF4A5C6A)
-                                                : const Color(0xFF9BA8AB);
-                                            return _AnimatedMediaFileCard(
-                                              child: FutureBuilder<File?>(
-                                                future: asset.file,
-                                                builder: (context, snap) {
-                                                  if (!snap.hasData) {
-                                                    return MediaFileCard(
-                                                      icon: Icons
-                                                          .music_note_outlined,
-                                                      title: 'Loading...',
-                                                      isFavourite: false,
-                                                      onTap: () {},
-                                                      overlayColor:
-                                                          overlayColor,
-                                                    );
-                                                  }
-                                                  final file = snap.data!;
-                                                  return MediaFileCard(
-                                                    icon: Icons
-                                                        .music_note_outlined,
-                                                    title:
-                                                        asset.title ??
-                                                        file.path
-                                                            .split('/')
-                                                            .last,
-                                                    isFavourite: _favourites
-                                                        .contains(asset.id),
-                                                    onTap: () {
-                                                      final fullList =
-                                                          folderAudios;
-                                                      final initialIndex =
-                                                          fullList.indexWhere(
-                                                            (a) =>
-                                                                a.id ==
-                                                                asset.id,
-                                                          );
-                                                      if (initialIndex != -1) {
-                                                        Navigator.push(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                            builder: (_) =>
-                                                                AudioPlayerScreen(
-                                                                  audios:
-                                                                      fullList,
-                                                                  initialIndex:
-                                                                      initialIndex,
-                                                                ),
-                                                          ),
-                                                        );
-                                                      }
-                                                    },
-                                                    overlayColor: overlayColor,
-                                                  );
-                                                },
-                                              ),
-                                              onTap: () {
-                                                final fullList = folderAudios;
-                                                final initialIndex = fullList
-                                                    .indexWhere(
-                                                      (a) => a.id == asset.id,
-                                                    );
-                                                if (initialIndex != -1) {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (_) =>
-                                                          AudioPlayerScreen(
-                                                            audios: fullList,
-                                                            initialIndex:
-                                                                initialIndex,
-                                                          ),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                          : audiosToShow.isEmpty
-                          ? Center(
-                              child: Text(
-                                _isSearching
-                                    ? 'No results.'
-                                    : 'No audio found.',
-                                style: const TextStyle(
-                                  color: Color(0xFF9BA8AB),
+                                  ),
                                 ),
-                              ),
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              itemCount: audiosToShow.length,
-                              itemBuilder: (context, index) {
-                                final asset = audiosToShow[index];
-                                final overlayColor = index % 2 == 0
-                                    ? const Color(0xFF4A5C6A)
-                                    : const Color(0xFF9BA8AB);
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 6,
-                                  ),
-                                  child: _AnimatedMediaFileCard(
-                                    child: FutureBuilder<File?>(
-                                      future: asset.file,
-                                      builder: (context, snapshot) {
-                                        String title = asset.title ?? 'Unknown';
-                                        if (snapshot.hasData &&
-                                            snapshot.data != null) {
-                                          title =
-                                              asset.title ??
-                                              snapshot.data!.path
-                                                  .split('/')
-                                                  .last;
-                                        }
-                                        return MediaFileCard(
-                                          icon: Icons.music_note_outlined,
-                                          title: title,
-                                          isFavourite: _favourites.contains(
-                                            asset.id,
-                                          ),
-                                          onTap: () {
-                                            final fullList = audiosToShow;
-                                            final initialIndex = fullList
-                                                .indexWhere(
-                                                  (a) => a.id == asset.id,
-                                                );
-                                            if (initialIndex != -1) {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      AudioPlayerScreen(
-                                                        audios: fullList,
-                                                        initialIndex:
-                                                            initialIndex,
-                                                      ),
-                                                ),
-                                              );
-                                            }
-                                          },
-                                          overlayColor: overlayColor,
-                                        );
-                                      },
+                                // Tab buttons
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildFilterTab('All Songs', 0),
                                     ),
-                                    onTap: () {
-                                      final fullList = audiosToShow;
-                                      final initialIndex = fullList.indexWhere(
-                                        (a) => a.id == asset.id,
-                                      );
-                                      if (initialIndex != -1) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => AudioPlayerScreen(
-                                              audios: fullList,
-                                              initialIndex: initialIndex,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
+                                    Expanded(
+                                      child: _buildFilterTab('Playlists', 1),
+                                    ),
+                                    Expanded(
+                                      child: _buildFilterTab('Folder', 2),
+                                    ),
+                                    Expanded(
+                                      child: _buildFilterTab('Album', 3),
+                                    ),
+                                    Expanded(
+                                      child: _buildFilterTab('Artist', 4),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
                     ),
+                    // Content based on selected tab
+                    Expanded(child: _buildTabContent()),
                   ],
                 ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class StatusOverlays {
   static Widget seek({required BuildContext context, required double offset}) {
@@ -11,7 +12,7 @@ class StatusOverlays {
         ),
         child: Text(
           '${offset > 0 ? '+' : ''}${offset.round()}s',
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             color: Theme.of(context).colorScheme.onSurface,
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -42,7 +43,7 @@ class StatusOverlays {
             ),
             Text(
               '${(volume * 100).round()}%',
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 20,
               ),
@@ -72,7 +73,7 @@ class StatusOverlays {
             const SizedBox(height: 8),
             Text(
               '${(level * 100).toInt()}%',
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 16,
               ),
@@ -93,7 +94,7 @@ class StatusOverlays {
         ),
         child: Text(
           text,
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             color: Theme.of(context).colorScheme.onSurface,
             fontSize: 16,
             fontWeight: FontWeight.bold,

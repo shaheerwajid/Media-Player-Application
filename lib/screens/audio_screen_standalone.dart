@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'dart:math' as Math;
+import 'package:google_fonts/google_fonts.dart';
 
 class AudioScreenStandalone extends StatefulWidget {
   final bool isAudioPlayerReady;
@@ -103,16 +104,17 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
       height: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          begin: Alignment.bottomLeft,
+          end: Alignment.topRight,
           colors: [
-            Color(0xFF06141B),
-            Color(0xFF11212D),
-            Color(0xFF253745),
-            Color(0xFF4A5C6A),
-            Color(0xFF9BA8AB),
+            Color(0xFF06151C),
+            Color(0xFF0C1A24),
+            Color(0xFF172734),
+            Color(0xFF2F404D),
+            Color(0xFF64727A),
+            Color(0xFFCCD1CF),
           ],
-          stops: [0.0, 0.2, 0.45, 0.75, 1.0],
+          stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
         ),
       ),
       child: Center(
@@ -210,7 +212,7 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                             Expanded(
                               child: Text(
                                 'Now Playing',
-                                style: TextStyle(
+                                style: GoogleFonts.poppins(
                                   color: Colors.white.withOpacity(0.92),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18,
@@ -348,8 +350,8 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                           child: Text(
                             '${widget.formatDuration(Duration(milliseconds: _sliderValue.toInt()))} / '
                             '${widget.formatDuration(Duration(milliseconds: widget.totalDurationMs ?? 0))}',
-                            style: const TextStyle(
-                              color: Color(0xFFCCD0CF),
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFFCCD0CF),
                               fontWeight: FontWeight.w500,
                               fontSize: 14,
                               letterSpacing: 0.5,
@@ -381,8 +383,8 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                             ),
                             child: Text(
                               widget.lyrics!,
-                              style: const TextStyle(
-                                color: Color(0xFFCCD0CF),
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFFCCD0CF),
                                 fontSize: 15,
                                 fontWeight: FontWeight.w400,
                                 height: 1.4,
@@ -403,7 +405,7 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                             child: Center(
                               child: Text(
                                 'No lyrics available',
-                                style: TextStyle(
+                                style: GoogleFonts.poppins(
                                   color: Colors.white.withOpacity(0.32),
                                   fontSize: 13,
                                   fontStyle: FontStyle.italic,
