@@ -101,6 +101,14 @@ flutter:
     - assets/
     - assets/icon/
     - assets/icon/icon.png
+    - assets/delete.png
+    - assets/search.png
+    - assets/view.png
+    - assets/sort.png
+    - assets/favourite.png
+    - assets/music.png
+    - assets/video.png
+    - assets/settings.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

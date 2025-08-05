@@ -931,21 +931,19 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
               child: Row(
                 children: [
                   // Icon
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.white.withOpacity(0.18),
-                    ),
-                    child: Icon(
-                      playlist == 'Favourite Songs'
-                          ? Icons.favorite
-                          : Icons.queue_music_outlined,
+                  if (playlist == 'Favourite Songs')
+                    Image.asset(
+                      'assets/favourite.png',
+                      width: 24,
+                      height: 24,
+                      color: const Color(0xFFCCD0CF),
+                    )
+                  else
+                    Icon(
+                      Icons.queue_music_outlined,
                       size: 24,
                       color: const Color(0xFFCCD0CF),
                     ),
-                  ),
                   const SizedBox(width: 16),
                   // Text content
                   Expanded(
@@ -1253,10 +1251,10 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                       ),
                       // Favourite icon
                       IconButton(
-                        icon: Icon(
-                          _favourites.contains(asset.id)
-                              ? Icons.star
-                              : Icons.star_border,
+                        icon: Image.asset(
+                          'assets/favourite.png',
+                          width: 24,
+                          height: 24,
                           color: _favourites.contains(asset.id)
                               ? Colors.amber
                               : const Color(0xFF9BA8AB),
@@ -2016,7 +2014,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
             )
           else ...[
             IconButton(
-              icon: const Icon(Icons.search_outlined, color: Color(0xFF4A5C6A)),
+              icon: Image.asset('assets/search.png', width: 24, height: 24),
               onPressed: _startSearch,
             ),
           ],

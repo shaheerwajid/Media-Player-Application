@@ -163,7 +163,12 @@ class _VideoScreenState extends State<VideoScreen> {
               ),
               for (final playlist in _playlists)
                 ListTile(
-                  leading: const Icon(Icons.queue_music_outlined),
+                  leading: Image.asset(
+                    'assets/favourite.png',
+                    width: 24,
+                    height: 24,
+                    color: const Color(0xFFCCD0CF),
+                  ),
                   title: Text(playlist),
                   onTap: () {
                     setState(() => _selectedPlaylist = playlist);
@@ -533,7 +538,7 @@ class _VideoScreenState extends State<VideoScreen> {
             )
           else ...[
             IconButton(
-              icon: const Icon(Icons.search_outlined, color: Colors.white),
+              icon: Image.asset('assets/search.png', width: 24, height: 24),
               onPressed: () {
                 setState(() {
                   _isSearching = true;
@@ -677,9 +682,10 @@ class _VideoScreenState extends State<VideoScreen> {
                               ),
                             ),
                             child: IconButton(
-                              icon: const Icon(
-                                Icons.sort,
-                                color: Color(0xFFCCD0CF),
+                              icon: Image.asset(
+                                'assets/sort.png',
+                                width: 22,
+                                height: 22,
                               ),
                               onPressed: () {
                                 _showSortDialog();
@@ -688,6 +694,7 @@ class _VideoScreenState extends State<VideoScreen> {
                           )
                         : null,
                   ),
+                  const SizedBox(width: 4), // 1px padding between buttons
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.05),
@@ -698,9 +705,10 @@ class _VideoScreenState extends State<VideoScreen> {
                       ),
                     ),
                     child: IconButton(
-                      icon: Icon(
-                        _isGridView ? Icons.view_list : Icons.grid_view,
-                        color: const Color(0xFFCCD0CF),
+                      icon: Image.asset(
+                        'assets/view.png',
+                        width: 22,
+                        height: 22,
                       ),
                       onPressed: () {
                         setState(() {
@@ -833,15 +841,24 @@ class _VideoScreenState extends State<VideoScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              _isSearching
-                                  ? Icons.search_off
-                                  : _selectedPlaylist != null
-                                  ? Icons.queue_music_outlined
-                                  : Icons.video_library_outlined,
-                              color: const Color(0xFF9BA8AB),
-                              size: 48,
-                            ),
+                            _isSearching
+                                ? Icon(
+                                    Icons.search_off,
+                                    color: const Color(0xFF9BA8AB),
+                                    size: 48,
+                                  )
+                                : _selectedPlaylist != null
+                                ? Image.asset(
+                                    'assets/favourite.png',
+                                    width: 48,
+                                    height: 48,
+                                    color: const Color(0xFF9BA8AB),
+                                  )
+                                : Icon(
+                                    Icons.video_library_outlined,
+                                    color: const Color(0xFF9BA8AB),
+                                    size: 48,
+                                  ),
                             const SizedBox(height: 16),
                             Text(
                               _isSearching
@@ -1174,14 +1191,13 @@ class _VideoScreenState extends State<VideoScreen> {
               // Favourite icon and playlist button
               Column(
                 children: [
-                  Icon(
-                    _favourites.contains(asset.id)
-                        ? Icons.star
-                        : Icons.star_border,
+                  Image.asset(
+                    'assets/favourite.png',
+                    width: 20,
+                    height: 20,
                     color: _favourites.contains(asset.id)
                         ? Colors.amber
                         : const Color(0xFF9BA8AB),
-                    size: 20,
                   ),
                   const SizedBox(height: 8),
                   GestureDetector(
@@ -1387,11 +1403,19 @@ class _VideoScreenState extends State<VideoScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.queue_music_outlined,
-                    size: 28,
-                    color: const Color(0xFFCCD0CF),
-                  ),
+                  if (playlist == 'Favourite Videos')
+                    Image.asset(
+                      'assets/favourite.png',
+                      width: 28,
+                      height: 28,
+                      color: const Color(0xFFCCD0CF),
+                    )
+                  else
+                    Icon(
+                      Icons.queue_play_next_outlined,
+                      size: 28,
+                      color: const Color(0xFFCCD0CF),
+                    ),
                   const SizedBox(height: 4),
                   Text(
                     playlist,
@@ -1669,12 +1693,13 @@ class _VideoScreenState extends State<VideoScreen> {
             Positioned(
               top: 8,
               right: 8,
-              child: Icon(
-                _favourites.contains(asset.id) ? Icons.star : Icons.star_border,
+              child: Image.asset(
+                'assets/favourite.png',
+                width: 16,
+                height: 16,
                 color: _favourites.contains(asset.id)
                     ? Colors.amber
                     : const Color(0xFF9BA8AB),
-                size: 16,
               ),
             ),
             // Playlist button overlay
