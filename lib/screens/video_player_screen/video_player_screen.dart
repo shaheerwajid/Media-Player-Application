@@ -2460,196 +2460,490 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                             Column(
                               children: [
                                 // Top controls
-                                Container(
-                                  height: 60,
-                                  color: Colors.black54,
-                                  child: Row(
-                                    children: [
-                                      if (!_isLocked) ...[
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.arrow_back,
-                                            color: Colors.white,
-                                          ),
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                        ),
-                                        const Spacer(),
-                                      ],
-                                      // Lock button - always visible
-                                      IconButton(
-                                        icon: Icon(
-                                          _isLocked
-                                              ? Icons.lock
-                                              : Icons.lock_open,
-                                          color: Colors.white,
-                                        ),
-                                        onPressed: _toggleLock,
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 35),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 18,
+                                        sigmaY: 18,
                                       ),
-                                      if (!_isLocked) ...[
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.screen_rotation,
-                                            color: Colors.white,
+                                      child: Container(
+                                        height: 60,
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              Colors.white.withOpacity(0.18),
+                                              Colors.grey.withOpacity(0.10),
+                                              Colors.white.withOpacity(0.12),
+                                            ],
                                           ),
-                                          onPressed: _toggleOrientation,
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(
+                                              0.18,
+                                            ),
+                                            width: 1.2,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
                                         ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.picture_in_picture,
-                                            color: Colors.white,
-                                          ),
-                                          onPressed: () async =>
-                                              await pip.enterPipMode(
-                                                aspectRatio: (16, 9),
+                                        child: Row(
+                                          children: [
+                                            if (!_isLocked) ...[
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.arrow_back,
+                                                  color: Colors.white,
+                                                ),
+                                                onPressed: () =>
+                                                    Navigator.pop(context),
                                               ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text(
+                                                  widget
+                                                          .videoAssets[_currentIndex]
+                                                          .title ??
+                                                      'Video',
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                            // Lock button - always visible
+                                            IconButton(
+                                              icon: Icon(
+                                                _isLocked
+                                                    ? Icons.lock
+                                                    : Icons.lock_open,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: _toggleLock,
+                                            ),
+                                            if (!_isLocked) ...[
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.more_vert,
+                                                  color: Colors.white,
+                                                ),
+                                                onPressed: () =>
+                                                    _showVideoMoreOptions(
+                                                      context,
+                                                    ),
+                                              ),
+                                            ],
+                                          ],
                                         ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.music_note,
-                                            color: Colors.white,
-                                          ),
-                                          onPressed: _switchToAudio,
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.more_vert,
-                                            color: Colors.white,
-                                          ),
-                                          onPressed: () =>
-                                              _showVideoMoreOptions(context),
-                                        ),
-                                      ],
-                                    ],
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const Spacer(),
                                 // Bottom controls - only show when not locked
                                 if (!_isLocked)
-                                  Container(
-                                    height: 120,
-                                    color: Colors.black54,
-                                    child: Column(
-                                      children: [
-                                        // Progress bar and time
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Text(
-                                                _formatDuration(
-                                                  player.state.position,
-                                                ),
-                                                style: GoogleFonts.poppins(
-                                                  color: Colors.white,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                              Expanded(
-                                                child: Slider(
-                                                  value: player
-                                                      .state
-                                                      .position
-                                                      .inMilliseconds
-                                                      .toDouble(),
-                                                  max: player
-                                                      .state
-                                                      .duration
-                                                      .inMilliseconds
-                                                      .toDouble(),
-                                                  onChanged: (value) {
-                                                    player.seek(
-                                                      Duration(
-                                                        milliseconds: value
-                                                            .toInt(),
-                                                      ),
-                                                    );
-                                                  },
-                                                  activeColor: Colors.white,
-                                                  inactiveColor: Colors.white24,
-                                                ),
-                                              ),
-                                              Text(
-                                                _formatDuration(
-                                                  player.state.duration,
-                                                ),
-                                                style: GoogleFonts.poppins(
-                                                  color: Colors.white,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 18,
+                                        sigmaY: 18,
+                                      ),
+                                      child: Container(
+                                        height: 170,
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              Colors.white.withOpacity(0.18),
+                                              Colors.grey.withOpacity(0.10),
+                                              Colors.white.withOpacity(0.12),
                                             ],
                                           ),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(
+                                              0.18,
+                                            ),
+                                            width: 1.2,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
                                         ),
-                                        // Control buttons
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
+                                        child: Column(
                                           children: [
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.skip_previous,
-                                                color: Colors.white,
+                                            // Progress bar and time
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 20,
+                                                    vertical: 12,
+                                                  ),
+                                              child: Row(
+                                                children: [
+                                                  Text(
+                                                    _formatDuration(
+                                                      player.state.position,
+                                                    ),
+                                                    style: GoogleFonts.poppins(
+                                                      color: Colors.white,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: SliderTheme(
+                                                      data:
+                                                          SliderTheme.of(
+                                                            context,
+                                                          ).copyWith(
+                                                            trackHeight: 2,
+                                                            thumbShape:
+                                                                const RoundSliderThumbShape(
+                                                                  enabledThumbRadius:
+                                                                      6,
+                                                                ),
+                                                            overlayShape:
+                                                                const RoundSliderOverlayShape(
+                                                                  overlayRadius:
+                                                                      12,
+                                                                ),
+                                                          ),
+                                                      child: Slider(
+                                                        value: player
+                                                            .state
+                                                            .position
+                                                            .inMilliseconds
+                                                            .toDouble(),
+                                                        max: player
+                                                            .state
+                                                            .duration
+                                                            .inMilliseconds
+                                                            .toDouble(),
+                                                        onChanged: (value) {
+                                                          player.seek(
+                                                            Duration(
+                                                              milliseconds:
+                                                                  value.toInt(),
+                                                            ),
+                                                          );
+                                                        },
+                                                        activeColor:
+                                                            Colors.white,
+                                                        inactiveColor: Colors
+                                                            .white
+                                                            .withOpacity(0.3),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    _formatDuration(
+                                                      player.state.duration,
+                                                    ),
+                                                    style: GoogleFonts.poppins(
+                                                      color: Colors.white,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              onPressed: canPlayPrevious
-                                                  ? _playPrevious
-                                                  : null,
                                             ),
-                                            IconButton(
-                                              icon: Icon(
-                                                player.state.playing
-                                                    ? Icons.pause
-                                                    : Icons.play_arrow,
-                                                color: Colors.white,
-                                                size: 48,
+                                            // Main controls row
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                  ),
+                                              child: Row(
+                                                children: [
+                                                  // Left outlined button (PiP)
+                                                  Container(
+                                                    width: 40,
+                                                    height: 40,
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: Colors.white,
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: IconButton(
+                                                      icon: const Icon(
+                                                        Icons
+                                                            .picture_in_picture,
+                                                        color: Colors.white,
+                                                        size: 20,
+                                                      ),
+                                                      onPressed: () async =>
+                                                          await pip
+                                                              .enterPipMode(
+                                                                aspectRatio: (
+                                                                  16,
+                                                                  9,
+                                                                ),
+                                                              ),
+                                                      padding: EdgeInsets.zero,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  // Center control group (Expanded)
+                                                  Expanded(
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 4,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              25,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: Colors.white,
+                                                          width: 1,
+                                                        ),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        mainAxisSize:
+                                                            MainAxisSize.max,
+                                                        children: [
+                                                          IconButton(
+                                                            icon: const Icon(
+                                                              Icons
+                                                                  .skip_previous,
+                                                              color:
+                                                                  Colors.white,
+                                                              size: 24,
+                                                            ),
+                                                            onPressed:
+                                                                canPlayPrevious
+                                                                ? _playPrevious
+                                                                : null,
+                                                          ),
+                                                          IconButton(
+                                                            icon: const Icon(
+                                                              Icons.fast_rewind,
+                                                              color:
+                                                                  Colors.white,
+                                                              size: 20,
+                                                            ),
+                                                            onPressed: () =>
+                                                                player.seek(
+                                                                  player
+                                                                          .state
+                                                                          .position -
+                                                                      const Duration(
+                                                                        seconds:
+                                                                            10,
+                                                                      ),
+                                                                ),
+                                                          ),
+                                                          ClipRRect(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  28,
+                                                                ),
+                                                            child: BackdropFilter(
+                                                              filter:
+                                                                  ImageFilter.blur(
+                                                                    sigmaX: 18,
+                                                                    sigmaY: 18,
+                                                                  ),
+                                                              child: Container(
+                                                                width: 56,
+                                                                height: 56,
+                                                                decoration: BoxDecoration(
+                                                                  gradient: LinearGradient(
+                                                                    begin: Alignment
+                                                                        .topLeft,
+                                                                    end: Alignment
+                                                                        .bottomRight,
+                                                                    colors: [
+                                                                      Colors
+                                                                          .white
+                                                                          .withOpacity(
+                                                                            0.18,
+                                                                          ),
+                                                                      Colors
+                                                                          .grey
+                                                                          .withOpacity(
+                                                                            0.10,
+                                                                          ),
+                                                                      Colors
+                                                                          .white
+                                                                          .withOpacity(
+                                                                            0.12,
+                                                                          ),
+                                                                    ],
+                                                                  ),
+                                                                  border: Border.all(
+                                                                    color: Colors
+                                                                        .white
+                                                                        .withOpacity(
+                                                                          0.18,
+                                                                        ),
+                                                                    width: 1.2,
+                                                                  ),
+                                                                  shape: BoxShape
+                                                                      .circle,
+                                                                ),
+                                                                child: IconButton(
+                                                                  icon: Icon(
+                                                                    player
+                                                                            .state
+                                                                            .playing
+                                                                        ? Icons
+                                                                              .pause
+                                                                        : Icons
+                                                                              .play_arrow,
+                                                                    color: Colors
+                                                                        .white,
+                                                                    size: 32,
+                                                                  ),
+                                                                  onPressed: () {
+                                                                    if (player
+                                                                        .state
+                                                                        .playing) {
+                                                                      player
+                                                                          .pause();
+                                                                    } else {
+                                                                      player
+                                                                          .play();
+                                                                    }
+                                                                  },
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          IconButton(
+                                                            icon: const Icon(
+                                                              Icons
+                                                                  .fast_forward,
+                                                              color:
+                                                                  Colors.white,
+                                                              size: 20,
+                                                            ),
+                                                            onPressed: () =>
+                                                                player.seek(
+                                                                  player
+                                                                          .state
+                                                                          .position +
+                                                                      const Duration(
+                                                                        seconds:
+                                                                            10,
+                                                                      ),
+                                                                ),
+                                                          ),
+                                                          IconButton(
+                                                            icon: const Icon(
+                                                              Icons.skip_next,
+                                                              color:
+                                                                  Colors.white,
+                                                              size: 24,
+                                                            ),
+                                                            onPressed:
+                                                                canPlayNext
+                                                                ? _playNext
+                                                                : null,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  // Right outlined button (audio mode)
+                                                  Container(
+                                                    width: 40,
+                                                    height: 40,
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: Colors.white,
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: IconButton(
+                                                      icon: const Icon(
+                                                        Icons.music_note,
+                                                        color: Colors.white,
+                                                        size: 20,
+                                                      ),
+                                                      onPressed: _switchToAudio,
+                                                      padding: EdgeInsets.zero,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              onPressed: () {
-                                                if (player.state.playing) {
-                                                  player.pause();
-                                                } else {
-                                                  player.play();
-                                                }
-                                              },
                                             ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.skip_next,
-                                                color: Colors.white,
+                                            const SizedBox(height: 8),
+                                            // Additional controls row
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 20,
+                                                  ),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
+                                                children: [
+                                                  IconButton(
+                                                    icon: Icon(
+                                                      _isMuted
+                                                          ? Icons.volume_off
+                                                          : Icons.volume_up,
+                                                      color: Colors.white,
+                                                    ),
+                                                    onPressed: () =>
+                                                        _setMute(!_isMuted),
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.screenshot,
+                                                      color: Colors.white,
+                                                    ),
+                                                    onPressed:
+                                                        _captureAndSaveScreenshot,
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.aspect_ratio,
+                                                      color: Colors.white,
+                                                    ),
+                                                    onPressed: _cycleAspectMode,
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.fullscreen,
+                                                      color: Colors.white,
+                                                    ),
+                                                    onPressed:
+                                                        _toggleOrientation,
+                                                  ),
+                                                ],
                                               ),
-                                              onPressed: canPlayNext
-                                                  ? _playNext
-                                                  : null,
-                                            ),
-                                            IconButton(
-                                              icon: Icon(
-                                                _isMuted
-                                                    ? Icons.volume_off
-                                                    : Icons.volume_up,
-                                                color: Colors.white,
-                                              ),
-                                              onPressed: () =>
-                                                  _setMute(!_isMuted),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.screenshot,
-                                                color: Colors.white,
-                                              ),
-                                              onPressed:
-                                                  _captureAndSaveScreenshot,
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.aspect_ratio,
-                                                color: Colors.white,
-                                              ),
-                                              onPressed: _cycleAspectMode,
                                             ),
                                           ],
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
                               ],

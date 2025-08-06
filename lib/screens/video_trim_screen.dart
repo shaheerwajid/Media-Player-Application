@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:easy_video_editor/easy_video_editor.dart';
 import 'package:media_kit/media_kit.dart';
@@ -130,109 +131,302 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
   Widget build(BuildContext context) {
     final totalMs = _duration.inMilliseconds.toDouble();
     return Scaffold(
-      appBar: AppBar(title: const Text('Trim Video')),
-      body: _duration == Duration.zero
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: Center(
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: Video(
-                        controller: _controller,
-                        controls: NoVideoControls,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          'Trim Video',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFFCCD0CF),
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomLeft,
+              end: Alignment.topRight,
+              colors: [
+                Color(0xFF06151C),
+                Color(0xFF0C1A24),
+                Color(0xFF172734),
+                Color(0xFF2F404D),
+                Color(0xFF64727A),
+                Color(0xFFCCD1CF),
+              ],
+              stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+            ),
+          ),
+        ),
+      ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
+            colors: [
+              Color(0xFF06151C),
+              Color(0xFF0C1A24),
+              Color(0xFF172734),
+              Color(0xFF2F404D),
+              Color(0xFF64727A),
+              Color(0xFFCCD1CF),
+            ],
+            stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+          ),
+        ),
+        child: _duration == Duration.zero
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Video(
+                          controller: _controller,
+                          controls: NoVideoControls,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // Trim range selector
-                      SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          trackHeight: 4,
-                          thumbShape: const RoundSliderThumbShape(
-                            enabledThumbRadius: 8,
-                          ),
-                          overlayShape: const RoundSliderOverlayShape(
-                            overlayRadius: 14,
-                          ),
-                          activeTrackColor: Theme.of(
-                            context,
-                          ).colorScheme.secondary,
-                          inactiveTrackColor: Colors.grey.shade600,
-                        ),
-                        child: RangeSlider(
-                          values: RangeValues(_start, _end),
-                          min: 0.0,
-                          max: totalMs,
-                          divisions: (_duration.inSeconds).clamp(10, 120),
-                          onChanged: (values) {
-                            setState(() {
-                              _start = values.start;
-                              _end = values.end;
-                            });
-                          },
-                        ),
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        // Combined controls card
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                            child: Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.white.withOpacity(0.18),
+                                    Colors.grey.withOpacity(0.10),
+                                    Colors.white.withOpacity(0.12),
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.18),
+                                  width: 1.2,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Column(
+                                children: [
+                                  // Trim range slider
+                                  SliderTheme(
+                                    data: SliderTheme.of(context).copyWith(
+                                      trackHeight: 4,
+                                      thumbShape: const RoundSliderThumbShape(
+                                        enabledThumbRadius: 8,
+                                      ),
+                                      overlayShape:
+                                          const RoundSliderOverlayShape(
+                                            overlayRadius: 14,
+                                          ),
+                                      activeTrackColor: Colors.white,
+                                      inactiveTrackColor: Colors.white
+                                          .withOpacity(0.3),
+                                    ),
+                                    child: RangeSlider(
+                                      values: RangeValues(_start, _end),
+                                      min: 0.0,
+                                      max: totalMs,
+                                      divisions: (_duration.inSeconds).clamp(
+                                        10,
+                                        120,
+                                      ),
+                                      onChanged: (values) {
+                                        setState(() {
+                                          _start = values.start;
+                                          _end = values.end;
+                                        });
+                                      },
+                                    ),
+                                  ),
 
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(_formatMs(_start)),
-                          Text(_formatMs(_end)),
-                        ],
-                      ),
+                                  // Time display
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          _formatMs(_start),
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          _formatMs(_end),
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
 
-                      const SizedBox(height: 12),
-                      // Preview playback controls
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            iconSize: 48,
-                            icon: Icon(
-                              _isPlaying
-                                  ? Icons.pause_circle
-                                  : Icons.play_circle,
+                                  const SizedBox(height: 16),
+
+                                  // Play/Pause button
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(28),
+                                    child: Container(
+                                      width: 56,
+                                      height: 56,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Colors.white.withOpacity(0.25),
+                                            Colors.grey.withOpacity(0.15),
+                                            Colors.white.withOpacity(0.20),
+                                          ],
+                                        ),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.25),
+                                          width: 1.5,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: IconButton(
+                                        iconSize: 32,
+                                        icon: Icon(
+                                          _isPlaying
+                                              ? Icons.pause_circle
+                                              : Icons.play_circle,
+                                          color: Colors.white,
+                                        ),
+                                        onPressed: _exporting
+                                            ? null
+                                            : () async {
+                                                if (_isPlaying) {
+                                                  await _player.pause();
+                                                  if (mounted)
+                                                    setState(
+                                                      () => _isPlaying = false,
+                                                    );
+                                                } else {
+                                                  await _player.seek(
+                                                    Duration(
+                                                      milliseconds: _start
+                                                          .round(),
+                                                    ),
+                                                  );
+                                                  await _player.play();
+                                                  if (mounted)
+                                                    setState(
+                                                      () => _isPlaying = true,
+                                                    );
+                                                }
+                                              },
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  // Progress indicator
+                                  if (_exporting)
+                                    Column(
+                                      children: [
+                                        LinearProgressIndicator(
+                                          value: _exportProgress,
+                                          backgroundColor: Colors.white
+                                              .withOpacity(0.2),
+                                          valueColor:
+                                              const AlwaysStoppedAnimation<
+                                                Color
+                                              >(Colors.white),
+                                        ),
+                                        const SizedBox(height: 8),
+                                      ],
+                                    ),
+
+                                  // Save button
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: _exporting ? null : _exportTrim,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              Colors.white.withOpacity(0.25),
+                                              Colors.grey.withOpacity(0.15),
+                                              Colors.white.withOpacity(0.20),
+                                            ],
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(
+                                              0.25,
+                                            ),
+                                            width: 1.5,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.save,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Save Trim',
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            onPressed: _exporting
-                                ? null
-                                : () async {
-                                    if (_isPlaying) {
-                                      await _player.pause();
-                                      if (mounted)
-                                        setState(() => _isPlaying = false);
-                                    } else {
-                                      await _player.seek(
-                                        Duration(milliseconds: _start.round()),
-                                      );
-                                      await _player.play();
-                                      if (mounted)
-                                        setState(() => _isPlaying = true);
-                                    }
-                                  },
                           ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 12),
-                      if (_exporting)
-                        LinearProgressIndicator(value: _exportProgress),
-                      const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: _exporting ? null : _exportTrim,
-                        icon: const Icon(Icons.save),
-                        label: const Text('Save Trim'),
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 
