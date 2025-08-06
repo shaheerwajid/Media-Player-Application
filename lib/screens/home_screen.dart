@@ -310,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   }
 
   void _loadFavourites() {
-    final favs = _prefs.getStringList('favourites') ?? [];
+    final favs = _prefs.getStringList('video_favourites') ?? [];
     setState(() {
       _favourites = favs.toSet();
     });
@@ -692,6 +692,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                                                                       fullList,
                                                                   initialIndex:
                                                                       initialIndex,
+                                                                  onFavouritesChanged: () {
+                                                                    _loadFavourites();
+                                                                    setState(
+                                                                      () {},
+                                                                    );
+                                                                  },
                                                                 ),
                                                           ),
                                                         );
@@ -722,6 +728,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                                                         videoAssets: fullList,
                                                         initialIndex:
                                                             initialIndex,
+                                                        onFavouritesChanged:
+                                                            () {
+                                                              _loadFavourites();
+                                                              setState(() {});
+                                                            },
                                                       ),
                                                 ),
                                               );
@@ -926,6 +937,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                                             builder: (_) => VideoPlayerScreen(
                                               videoAssets: fullList,
                                               initialIndex: initialIndex,
+                                              onFavouritesChanged: () {
+                                                _loadFavourites();
+                                                setState(() {});
+                                              },
                                             ),
                                           ),
                                         );

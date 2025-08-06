@@ -37,12 +37,16 @@ class _VideoScreenState extends State<VideoScreen> {
   bool _sortAscending = false;
   List<AssetEntity> _sortedVideos = [];
   bool _isSorting = false;
+  bool _folderMapBuilt = false; // Track if folder map is built
+  bool _videosLoaded = false; // Track if videos are already loaded
 
   @override
   void initState() {
     super.initState();
     _initPrefs();
-    _fetchAllVideos();
+    if (!_videosLoaded) {
+      _fetchAllVideos();
+    }
     _searchController.addListener(_filterVideos);
   }
 
@@ -421,7 +425,7 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 
   void _buildFolderMap(List<AssetEntity> assets) async {
-    if (!mounted) return; // Early return if widget is disposed
+    if (!mounted || _folderMapBuilt) return; // Skip if already built
 
     print('Building folder map for ${assets.length} videos');
     final Map<String, List<AssetEntity>> folderMap = {};
@@ -448,8 +452,17 @@ class _VideoScreenState extends State<VideoScreen> {
       setState(() {
         _folderMap = folderMap;
         _folderList = folderMap.keys.toList();
+        _folderMapBuilt = true; // Mark as built
       });
     }
+  }
+
+  void _resetFolderMap() {
+    setState(() {
+      _folderMap.clear();
+      _folderList.clear();
+      _folderMapBuilt = false;
+    });
   }
 
   @override
@@ -492,19 +505,39 @@ class _VideoScreenState extends State<VideoScreen> {
 
     if (result.permissionState == PermissionState.authorized ||
         result.permissionState == PermissionState.limited) {
+      // Check if videos actually changed
+      bool videosChanged = _videoAssets.length != result.videos.length;
+      if (!videosChanged) {
+        // Check if any video IDs changed
+        final currentIds = _videoAssets.map((v) => v.id).toSet();
+        final newIds = result.videos.map((v) => v.id).toSet();
+        videosChanged =
+            !currentIds.containsAll(newIds) || !newIds.containsAll(currentIds);
+      }
+
       if (mounted) {
         setState(() {
           _videoAssets = result.videos;
           _filteredVideos = result.videos;
           _loading = false;
           _sortedVideos.clear(); // Clear cached sorted videos
+          _videosLoaded = true; // Mark videos as loaded
         });
       }
 
       if (mounted) {
         _loadFavourites();
         _loadHistory();
-        _buildFolderMap(result.videos);
+
+        // Build folder map if videos changed OR if folder map hasn't been built yet
+        if (videosChanged) {
+          _resetFolderMap();
+          _buildFolderMap(result.videos);
+        } else if (!_folderMapBuilt) {
+          // If videos haven't changed but folder map isn't built yet, build it
+          _buildFolderMap(result.videos);
+        }
+
         // Apply default sort (date, descending)
         if (_sortBy == 'date') {
           _performAsyncSort(result.videos);
@@ -791,29 +824,7 @@ class _VideoScreenState extends State<VideoScreen> {
                           _selectedTabIndex == 1) // 1 is the Folder tab index
                     ? _selectedFolder == null
                           ? _folderList.isEmpty
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'No folders found.',
-                                          style: GoogleFonts.poppins(
-                                            color: const Color(0xFF9BA8AB),
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Debug: _showFolders=$_showFolders, _folderList.length=${_folderList.length}',
-                                          style: GoogleFonts.poppins(
-                                            color: const Color(0xFF9BA8AB),
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
+                                ? const SkeletonList(itemCount: 6)
                                 : _isGridView
                                 ? GridView.builder(
                                     padding: const EdgeInsets.symmetric(
@@ -2570,16 +2581,6 @@ class _VideoScreenState extends State<VideoScreen> {
                                     : 'Longest first',
                                 _sortBy == 'length',
                               ),
-                              _buildSortOption(
-                                c,
-                                'size',
-                                Icons.storage,
-                                'File Size',
-                                _sortBy == 'size'
-                                    ? 'Smallest first'
-                                    : 'Largest first',
-                                _sortBy == 'size',
-                              ),
                               const SizedBox(height: 16),
                               // Divider
                               Container(
@@ -2657,6 +2658,14 @@ class _VideoScreenState extends State<VideoScreen> {
               _sortBy = sortType;
               _sortedVideos.clear();
             });
+            // Immediately trigger the correct sort
+            if (sortType == 'date' || sortType == 'size') {
+              _performAsyncSort(_videoAssets);
+            } else {
+              setState(() {
+                _sortedVideos = _sortVideos(_videoAssets);
+              });
+            }
             Navigator.pop(context);
           },
           child: Padding(
@@ -2754,6 +2763,14 @@ class _VideoScreenState extends State<VideoScreen> {
               _sortAscending = ascending;
               _sortedVideos.clear();
             });
+            // Immediately trigger the correct sort
+            if (_sortBy == 'date' || _sortBy == 'size') {
+              _performAsyncSort(_videoAssets);
+            } else {
+              setState(() {
+                _sortedVideos = _sortVideos(_videoAssets);
+              });
+            }
             Navigator.pop(context);
           },
           child: Padding(

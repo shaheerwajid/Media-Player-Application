@@ -42,7 +42,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
           ),
         ),
-        child: _screens[_selectedIndex],
+        child: IndexedStack(index: _selectedIndex, children: _screens),
       ),
       bottomNavigationBar: AnimatedNavBar(
         currentIndex: _selectedIndex,
