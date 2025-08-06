@@ -931,19 +931,16 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
               child: Row(
                 children: [
                   // Icon
-                  if (playlist == 'Favourite Songs')
-                    Image.asset(
-                      'assets/favourite.png',
-                      width: 24,
-                      height: 24,
-                      color: const Color(0xFFCCD0CF),
-                    )
-                  else
-                    Icon(
-                      Icons.queue_music_outlined,
-                      size: 24,
-                      color: const Color(0xFFCCD0CF),
-                    ),
+                  Image.asset(
+                    playlist == 'Favourite Songs'
+                        ? 'assets/favourite_playlist.png'
+                        : 'assets/playlist.png',
+                    width: 32,
+                    height: 32,
+                    color: playlist == 'Favourite Songs'
+                        ? null
+                        : const Color(0xFFCCD0CF),
+                  ),
                   const SizedBox(width: 16),
                   // Text content
                   Expanded(
@@ -1173,133 +1170,127 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
       itemCount: audios.length,
       itemBuilder: (context, index) {
         final asset = audios[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _AnimatedMediaFileCard(
-            child: ClipRRect(
+        return TweenAnimationBuilder<double>(
+          duration: Duration(milliseconds: 600 + (index * 50)),
+          curve: Curves.easeOutCubic,
+          tween: Tween<double>(begin: 0.0, end: 1.0),
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 20 * (1 - value)),
+              child: Opacity(
+                opacity: value,
+                child: Transform.scale(
+                  scale: 0.8 + (0.2 * value),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: _buildAudioListCard(asset, index),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAudioListCard(AssetEntity asset, int index) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => AudioPlayerScreen(
+              audios: _getFilteredAudios(),
+              initialIndex: _getFilteredAudios().indexWhere(
+                (a) => a.id == asset.id,
+              ),
+            ),
+          ),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+            decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 0),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 18,
-                  ),
+              color: Colors.white.withOpacity(0.13),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF06141B).withOpacity(0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+              border: Border.all(
+                width: 1.2,
+                style: BorderStyle.solid,
+                color: Colors.white.withOpacity(0.18),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Thumbnail
+                Container(
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    color: Colors.white.withOpacity(0.13),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF06141B).withOpacity(0.18),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                    border: Border.all(
-                      width: 1.2,
-                      style: BorderStyle.solid,
-                      color: Colors.white.withOpacity(0.18),
-                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.white.withOpacity(0.18),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  child: Icon(
+                    Icons.music_note_outlined,
+                    size: 32,
+                    color: const Color(0xFFCCD0CF),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Thumbnail
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Colors.white.withOpacity(0.18),
-                        ),
-                        child: Icon(
-                          Icons.music_note_outlined,
-                          size: 32,
+                      Text(
+                        asset.title ?? 'Unknown',
+                        style: GoogleFonts.poppins(
                           color: const Color(0xFFCCD0CF),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(width: 16),
-                      // Details
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              asset.title ?? 'Unknown',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFFCCD0CF),
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Unknown Album',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFF9BA8AB),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'Audio File',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF9BA8AB),
+                          fontSize: 14,
                         ),
-                      ),
-                      // Favourite icon
-                      IconButton(
-                        icon: Image.asset(
-                          'assets/favourite.png',
-                          width: 24,
-                          height: 24,
-                          color: _favourites.contains(asset.id)
-                              ? Colors.amber
-                              : const Color(0xFF9BA8AB),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            if (_favourites.contains(asset.id)) {
-                              _favourites.remove(asset.id);
-                              _prefs.setStringList(
-                                'audio_favourites',
-                                _favourites.toList(),
-                              );
-                            } else {
-                              _favourites.add(asset.id);
-                              _prefs.setStringList(
-                                'audio_favourites',
-                                _favourites.toList(),
-                              );
-                            }
-                          });
-                        },
                       ),
                     ],
                   ),
                 ),
-              ),
+                // Favourite icon
+                Icon(
+                  _favourites.contains(asset.id)
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  color: _favourites.contains(asset.id)
+                      ? Colors.red
+                      : const Color(0xFF9BA8AB),
+                  size: 24,
+                ),
+              ],
             ),
-            onTap: () {
-              final fullList = audios;
-              final initialIndex = fullList.indexWhere((a) => a.id == asset.id);
-              if (initialIndex != -1) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AudioPlayerScreen(
-                      audios: fullList,
-                      initialIndex: initialIndex,
-                    ),
-                  ),
-                );
-              }
-            },
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -1371,9 +1362,31 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                     } else {
                       count = _getPlaylistAudios(playlist).length;
                     }
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: _buildPlaylistCard(playlist, count, index),
+                    return TweenAnimationBuilder<double>(
+                      duration: Duration(milliseconds: 600 + (index * 50)),
+                      curve: Curves.easeOutCubic,
+                      tween: Tween<double>(begin: 0.0, end: 1.0),
+                      builder: (context, value, child) {
+                        return Transform.translate(
+                          offset: Offset(0, 20 * (1 - value)),
+                          child: Opacity(
+                            opacity: value,
+                            child: Transform.scale(
+                              scale: 0.8 + (0.2 * value),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                ),
+                                child: _buildPlaylistCard(
+                                  playlist,
+                                  count,
+                                  index,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -1491,7 +1504,23 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
       itemBuilder: (context, index) {
         final folder = _folderList[index];
         final count = _folderMap[folder]?.length ?? 0;
-        return _buildFolderCard(folder, count, index);
+        return TweenAnimationBuilder<double>(
+          duration: Duration(milliseconds: 600 + (index * 50)),
+          curve: Curves.easeOutCubic,
+          tween: Tween<double>(begin: 0.0, end: 1.0),
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 20 * (1 - value)),
+              child: Opacity(
+                opacity: value,
+                child: Transform.scale(
+                  scale: 0.8 + (0.2 * value),
+                  child: _buildFolderCard(folder, count, index),
+                ),
+              ),
+            );
+          },
+        );
       },
     );
   }
@@ -1658,7 +1687,23 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
       itemBuilder: (context, index) {
         final album = _albumList[index];
         final count = _albumMap[album]?.length ?? 0;
-        return _buildAlbumCard(album, count, index);
+        return TweenAnimationBuilder<double>(
+          duration: Duration(milliseconds: 600 + (index * 50)),
+          curve: Curves.easeOutCubic,
+          tween: Tween<double>(begin: 0.0, end: 1.0),
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 20 * (1 - value)),
+              child: Opacity(
+                opacity: value,
+                child: Transform.scale(
+                  scale: 0.8 + (0.2 * value),
+                  child: _buildAlbumCard(album, count, index),
+                ),
+              ),
+            );
+          },
+        );
       },
     );
   }
@@ -1752,7 +1797,23 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
       itemBuilder: (context, index) {
         final artist = _artistList[index];
         final count = _artistMap[artist]?.length ?? 0;
-        return _buildArtistCard(artist, count, index);
+        return TweenAnimationBuilder<double>(
+          duration: Duration(milliseconds: 600 + (index * 50)),
+          curve: Curves.easeOutCubic,
+          tween: Tween<double>(begin: 0.0, end: 1.0),
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 20 * (1 - value)),
+              child: Opacity(
+                opacity: value,
+                child: Transform.scale(
+                  scale: 0.8 + (0.2 * value),
+                  child: _buildArtistCard(artist, count, index),
+                ),
+              ),
+            );
+          },
+        );
       },
     );
   }

@@ -1539,6 +1539,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               ),
                               _buildOptionItem(
                                 context,
+                                Icons.playlist_add_outlined,
+                                'Add to Playlist',
+                                () {
+                                  Navigator.pop(c);
+                                  _showAddToPlaylistDialog(context);
+                                },
+                              ),
+                              _buildOptionItem(
+                                context,
                                 Icons.vrpano_outlined,
                                 _vrMode ? 'Disable VR Mode' : 'Enable VR Mode',
                                 () {
@@ -2699,6 +2708,280 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     } else if (_loopMode == 'stop') {
       // Do nothing, stop playback
     }
+  }
+
+  void _showAddToPlaylistDialog(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final playlists = prefs.getStringList('video_playlists') ?? [];
+    final currentVideo = widget.videoAssets[_currentIndex];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (c) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  Color(0xFF06151C),
+                  Color(0xFF0C1A24),
+                  Color(0xFF172734),
+                  Color(0xFF2F404D),
+                  Color(0xFF64727A),
+                  Color(0xFFCCD1CF),
+                ],
+                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF4A5C6A,
+                                  ).withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.playlist_add_outlined,
+                                  color: Color(0xFFCCD0CF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Add to Playlist',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFCCD0CF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Create new playlist option
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildOptionItem(
+                            context,
+                            Icons.add_circle_outline,
+                            'Create New Playlist',
+                            () {
+                              Navigator.pop(c);
+                              _showCreatePlaylistDialog(context);
+                            },
+                          ),
+                        ),
+                        if (playlists.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Existing Playlists:',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFFCCD0CF),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ...(playlists.map((playlist) {
+                            final inPlaylist =
+                                (prefs.getStringList('playlist_$playlist') ??
+                                        [])
+                                    .contains(currentVideo.id);
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: _buildOptionItem(
+                                context,
+                                inPlaylist
+                                    ? Icons.check_circle
+                                    : Icons.queue_music_outlined,
+                                playlist,
+                                () async {
+                                  if (inPlaylist) {
+                                    await _removeFromPlaylist(
+                                      currentVideo,
+                                      playlist,
+                                    );
+                                  } else {
+                                    await _addToPlaylist(
+                                      currentVideo,
+                                      playlist,
+                                    );
+                                  }
+                                  Navigator.pop(c);
+                                },
+                                subtitle: inPlaylist
+                                    ? 'Remove from playlist'
+                                    : 'Add to playlist',
+                              ),
+                            );
+                          })),
+                        ],
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCreatePlaylistDialog(BuildContext context) {
+    final TextEditingController playlistController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF11212D),
+          title: Text(
+            'Create New Playlist',
+            style: GoogleFonts.poppins(
+              color: const Color(0xFFCCD0CF),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: TextField(
+            controller: playlistController,
+            autofocus: true,
+            style: GoogleFonts.poppins(color: const Color(0xFFCCD0CF)),
+            decoration: InputDecoration(
+              hintText: 'Enter playlist name',
+              hintStyle: GoogleFonts.poppins(color: const Color(0xFF9BA8AB)),
+              border: const OutlineInputBorder(),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF253745)),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF4A5C6A)),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.poppins(color: const Color(0xFF9BA8AB)),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                final playlistName = playlistController.text.trim();
+                if (playlistName.isNotEmpty) {
+                  await _createPlaylist(playlistName);
+                  await _addToPlaylist(
+                    widget.videoAssets[_currentIndex],
+                    playlistName,
+                  );
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Text(
+                'Create',
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFF4A5C6A),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _createPlaylist(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    final playlists = prefs.getStringList('video_playlists') ?? [];
+    if (!playlists.contains(name)) {
+      playlists.add(name);
+      await prefs.setStringList('video_playlists', playlists);
+      await prefs.setStringList('playlist_$name', []);
+    }
+  }
+
+  Future<void> _addToPlaylist(AssetEntity video, String playlist) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList('playlist_$playlist') ?? [];
+    if (!list.contains(video.id)) {
+      list.add(video.id);
+      await prefs.setStringList('playlist_$playlist', list);
+    }
+  }
+
+  Future<void> _removeFromPlaylist(AssetEntity video, String playlist) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList('playlist_$playlist') ?? [];
+    list.remove(video.id);
+    await prefs.setStringList('playlist_$playlist', list);
   }
 }
 

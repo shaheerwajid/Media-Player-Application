@@ -310,6 +310,68 @@ class _VideoScreenState extends State<VideoScreen> {
     );
   }
 
+  void _showCreatePlaylistDialog() {
+    final TextEditingController playlistController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF11212D),
+          title: Text(
+            'Create New Playlist',
+            style: GoogleFonts.poppins(
+              color: const Color(0xFFCCD0CF),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: TextField(
+            controller: playlistController,
+            autofocus: true,
+            style: GoogleFonts.poppins(color: const Color(0xFFCCD0CF)),
+            decoration: InputDecoration(
+              hintText: 'Enter playlist name',
+              hintStyle: GoogleFonts.poppins(color: const Color(0xFF9BA8AB)),
+              border: const OutlineInputBorder(),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF253745)),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF4A5C6A)),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.poppins(color: const Color(0xFF9BA8AB)),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                final playlistName = playlistController.text.trim();
+                if (playlistName.isNotEmpty) {
+                  _createPlaylist(playlistName);
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Text(
+                'Create',
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFF4A5C6A),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _addToHistory(AssetEntity video) async {
     if (!mounted) return;
 
@@ -752,7 +814,8 @@ class _VideoScreenState extends State<VideoScreen> {
                                       ],
                                     ),
                                   )
-                                : GridView.builder(
+                                : _isGridView
+                                ? GridView.builder(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
                                       vertical: 8,
@@ -767,10 +830,74 @@ class _VideoScreenState extends State<VideoScreen> {
                                       final folder = _folderList[index];
                                       final count =
                                           _folderMap[folder]?.length ?? 0;
-                                      return _buildFolderCard(
-                                        folder,
-                                        count,
-                                        index,
+                                      return TweenAnimationBuilder<double>(
+                                        duration: Duration(
+                                          milliseconds: 600 + (index * 50),
+                                        ),
+                                        curve: Curves.easeOutCubic,
+                                        tween: Tween<double>(
+                                          begin: 0.0,
+                                          end: 1.0,
+                                        ),
+                                        builder: (context, value, child) {
+                                          return Transform.translate(
+                                            offset: Offset(0, 20 * (1 - value)),
+                                            child: Opacity(
+                                              opacity: value,
+                                              child: Transform.scale(
+                                                scale: 0.8 + (0.2 * value),
+                                                child: _buildFolderCard(
+                                                  folder,
+                                                  count,
+                                                  index,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  )
+                                : ListView.builder(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    itemCount: _folderList.length,
+                                    itemBuilder: (context, index) {
+                                      final folder = _folderList[index];
+                                      final count =
+                                          _folderMap[folder]?.length ?? 0;
+                                      return TweenAnimationBuilder<double>(
+                                        duration: Duration(
+                                          milliseconds: 600 + (index * 50),
+                                        ),
+                                        curve: Curves.easeOutCubic,
+                                        tween: Tween<double>(
+                                          begin: 0.0,
+                                          end: 1.0,
+                                        ),
+                                        builder: (context, value, child) {
+                                          return Transform.translate(
+                                            offset: Offset(0, 20 * (1 - value)),
+                                            child: Opacity(
+                                              opacity: value,
+                                              child: Transform.scale(
+                                                scale: 0.8 + (0.2 * value),
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 6,
+                                                      ),
+                                                  child: _buildFolderListCard(
+                                                    folder,
+                                                    count,
+                                                    index,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       );
                                     },
                                   )
@@ -807,28 +934,185 @@ class _VideoScreenState extends State<VideoScreen> {
                                       ],
                                     ),
                                   )
-                                : GridView.builder(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 8,
-                                    ),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2,
-                                          childAspectRatio: 1.2,
+                                : _isGridView
+                                ? Column(
+                                    children: [
+                                      // Header with title and plus icon
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
                                         ),
-                                    itemCount: _playlists.length,
-                                    itemBuilder: (context, index) {
-                                      final playlist = _playlists[index];
-                                      final count = _getPlaylistVideos(
-                                        playlist,
-                                      ).length;
-                                      return _buildPlaylistCard(
-                                        playlist,
-                                        count,
-                                        index,
-                                      );
-                                    },
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Playlists(${_playlists.length})',
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.white,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            IconButton(
+                                              onPressed: () {
+                                                _showCreatePlaylistDialog();
+                                              },
+                                              icon: const Icon(
+                                                Icons.add,
+                                                color: Colors.white,
+                                                size: 24,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      // Playlist grid
+                                      Expanded(
+                                        child: GridView.builder(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 8,
+                                          ),
+                                          gridDelegate:
+                                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount: 2,
+                                                childAspectRatio: 1.2,
+                                              ),
+                                          itemCount: _playlists.length,
+                                          itemBuilder: (context, index) {
+                                            final playlist = _playlists[index];
+                                            final count = _getPlaylistVideos(
+                                              playlist,
+                                            ).length;
+                                            return TweenAnimationBuilder<
+                                              double
+                                            >(
+                                              duration: Duration(
+                                                milliseconds:
+                                                    600 + (index * 50),
+                                              ),
+                                              curve: Curves.easeOutCubic,
+                                              tween: Tween<double>(
+                                                begin: 0.0,
+                                                end: 1.0,
+                                              ),
+                                              builder: (context, value, child) {
+                                                return Transform.translate(
+                                                  offset: Offset(
+                                                    0,
+                                                    20 * (1 - value),
+                                                  ),
+                                                  child: Opacity(
+                                                    opacity: value,
+                                                    child: Transform.scale(
+                                                      scale:
+                                                          0.8 + (0.2 * value),
+                                                      child: _buildPlaylistCard(
+                                                        playlist,
+                                                        count,
+                                                        index,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Column(
+                                    children: [
+                                      // Header with title and plus icon
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Playlists(${_playlists.length})',
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.white,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            IconButton(
+                                              onPressed: () {
+                                                _showCreatePlaylistDialog();
+                                              },
+                                              icon: const Icon(
+                                                Icons.add,
+                                                color: Colors.white,
+                                                size: 24,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      // Playlist list
+                                      Expanded(
+                                        child: ListView.builder(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                          ),
+                                          itemCount: _playlists.length,
+                                          itemBuilder: (context, index) {
+                                            final playlist = _playlists[index];
+                                            final count = _getPlaylistVideos(
+                                              playlist,
+                                            ).length;
+                                            return TweenAnimationBuilder<
+                                              double
+                                            >(
+                                              duration: Duration(
+                                                milliseconds:
+                                                    600 + (index * 50),
+                                              ),
+                                              curve: Curves.easeOutCubic,
+                                              tween: Tween<double>(
+                                                begin: 0.0,
+                                                end: 1.0,
+                                              ),
+                                              builder: (context, value, child) {
+                                                return Transform.translate(
+                                                  offset: Offset(
+                                                    0,
+                                                    20 * (1 - value),
+                                                  ),
+                                                  child: Opacity(
+                                                    opacity: value,
+                                                    child: Transform.scale(
+                                                      scale:
+                                                          0.8 + (0.2 * value),
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              vertical: 6,
+                                                            ),
+                                                        child:
+                                                            _buildPlaylistListCard(
+                                                              playlist,
+                                                              count,
+                                                              index,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   )
                           : Column(
                               children: [
@@ -889,7 +1173,25 @@ class _VideoScreenState extends State<VideoScreen> {
                         itemCount: _getVideosToShow().length,
                         itemBuilder: (context, index) {
                           final asset = _getVideosToShow()[index];
-                          return _buildGridVideoCard(asset, index);
+                          return TweenAnimationBuilder<double>(
+                            duration: Duration(
+                              milliseconds: 600 + (index * 50),
+                            ),
+                            curve: Curves.easeOutCubic,
+                            tween: Tween<double>(begin: 0.0, end: 1.0),
+                            builder: (context, value, child) {
+                              return Transform.translate(
+                                offset: Offset(0, 20 * (1 - value)),
+                                child: Opacity(
+                                  opacity: value,
+                                  child: Transform.scale(
+                                    scale: 0.8 + (0.2 * value),
+                                    child: _buildGridVideoCard(asset, index),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
                         },
                       )
                     : ListView.builder(
@@ -897,9 +1199,29 @@ class _VideoScreenState extends State<VideoScreen> {
                         itemCount: _getVideosToShow().length,
                         itemBuilder: (context, index) {
                           final asset = _getVideosToShow()[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: _buildVideoCard(asset, index),
+                          return TweenAnimationBuilder<double>(
+                            duration: Duration(
+                              milliseconds: 600 + (index * 50),
+                            ),
+                            curve: Curves.easeOutCubic,
+                            tween: Tween<double>(begin: 0.0, end: 1.0),
+                            builder: (context, value, child) {
+                              return Transform.translate(
+                                offset: Offset(0, 20 * (1 - value)),
+                                child: Opacity(
+                                  opacity: value,
+                                  child: Transform.scale(
+                                    scale: 0.8 + (0.2 * value),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 6,
+                                      ),
+                                      child: _buildVideoCard(asset, index),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                       ),
@@ -1350,16 +1672,56 @@ class _VideoScreenState extends State<VideoScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: folderVideos.length,
-      itemBuilder: (context, index) {
-        final asset = folderVideos[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _buildVideoCard(asset, index),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 600),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return SlideTransition(
+          position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+              .animate(
+                CurvedAnimation(parent: animation, curve: Curves.elasticOut),
+              ),
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.elasticOut),
+            ),
+            child: FadeTransition(opacity: animation, child: child),
+          ),
         );
       },
+      child: _isGridView
+          ? GridView.builder(
+              key: const ValueKey('folder_videos_grid'),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: folderVideos.length,
+              itemBuilder: (context, index) {
+                final asset = folderVideos[index];
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeInOutCubic,
+                  child: _buildGridVideoCard(asset, index),
+                );
+              },
+            )
+          : ListView.builder(
+              key: const ValueKey('folder_videos_list'),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: folderVideos.length,
+              itemBuilder: (context, index) {
+                final asset = folderVideos[index];
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeInOutCubic,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: _buildVideoCard(asset, index),
+                  ),
+                );
+              },
+            ),
     );
   }
 
@@ -1403,19 +1765,16 @@ class _VideoScreenState extends State<VideoScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (playlist == 'Favourite Videos')
-                    Image.asset(
-                      'assets/favourite.png',
-                      width: 28,
-                      height: 28,
-                      color: const Color(0xFFCCD0CF),
-                    )
-                  else
-                    Icon(
-                      Icons.queue_play_next_outlined,
-                      size: 28,
-                      color: const Color(0xFFCCD0CF),
-                    ),
+                  Image.asset(
+                    playlist == 'Favourite Videos'
+                        ? 'assets/favourite_playlist.png'
+                        : 'assets/playlist.png',
+                    width: 28,
+                    height: 28,
+                    color: playlist == 'Favourite Videos'
+                        ? null
+                        : const Color(0xFFCCD0CF),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     playlist,
@@ -1460,16 +1819,206 @@ class _VideoScreenState extends State<VideoScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: playlistVideos.length,
-      itemBuilder: (context, index) {
-        final asset = playlistVideos[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _buildVideoCard(asset, index),
-        );
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOutCubic,
+      child: _isGridView
+          ? GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: playlistVideos.length,
+              itemBuilder: (context, index) {
+                final asset = playlistVideos[index];
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeInOutCubic,
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.001)
+                    ..rotateY(_isGridView ? 0 : 0.1),
+                  child: _buildGridVideoCard(asset, index),
+                );
+              },
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: playlistVideos.length,
+              itemBuilder: (context, index) {
+                final asset = playlistVideos[index];
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeInOutCubic,
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.001)
+                    ..rotateY(_isGridView ? 0.1 : 0),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: _buildVideoCard(asset, index),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+
+  Widget _buildFolderListCard(String folder, int count, int index) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFolder = folder;
+        });
       },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFF11212D).withOpacity(0.4),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF06141B).withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(
+            width: 1,
+            style: BorderStyle.solid,
+            color: const Color(0xFF4A5C6A).withOpacity(0.3),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Folder icon
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFF253745),
+                ),
+                child: const Icon(
+                  Icons.folder_outlined,
+                  color: Color(0xFFCCD0CF),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      folder.split(Platform.pathSeparator).last,
+                      style: const TextStyle(
+                        color: Color(0xFFCCD0CF),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$count video${count == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        color: Color(0xFF9BA8AB),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Arrow icon
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Color(0xFF9BA8AB),
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaylistListCard(String playlist, int count, int index) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPlaylist = playlist;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFF11212D).withOpacity(0.4),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF06141B).withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(
+            width: 1,
+            style: BorderStyle.solid,
+            color: const Color(0xFF4A5C6A).withOpacity(0.3),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Playlist icon
+              Image.asset(
+                playlist == 'Favourite Videos'
+                    ? 'assets/favourite_playlist.png'
+                    : 'assets/playlist.png',
+                width: 32,
+                height: 32,
+                color: playlist == 'Favourite Videos'
+                    ? null
+                    : const Color(0xFFCCD0CF),
+              ),
+              const SizedBox(width: 12),
+              // Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      playlist,
+                      style: const TextStyle(
+                        color: Color(0xFFCCD0CF),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$count video${count == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        color: Color(0xFF9BA8AB),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Arrow icon
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Color(0xFF9BA8AB),
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -21,18 +21,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const SettingsScreen(),
   ];
 
-  final List<NavBarItem> _navItems = [
-    NavBarItem(label: 'Video', assetPath: 'assets/video.png'),
-    NavBarItem(label: 'Music', assetPath: 'assets/music.png'),
-    NavBarItem(label: 'Settings', assetPath: 'assets/settings.png'),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,8 +46,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       bottomNavigationBar: AnimatedNavBar(
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: _navItems,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        items: [
+          NavBarItem(label: 'Video', assetPath: 'assets/video.png'),
+          NavBarItem(label: 'Music', assetPath: 'assets/music.png'),
+          NavBarItem(label: 'Me', assetPath: 'assets/settings.png'),
+        ],
       ),
     );
   }
