@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/scheduler.dart';
 import '../services/native_audio_service.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:ui';
+import '../theme_data.dart';
 
 class AudioScreen extends StatefulWidget {
   final bool isAudioPlayerReady;
@@ -14,6 +16,7 @@ class AudioScreen extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onPrevious;
   final VoidCallback? onMoreOptions;
+  final void Function(int ms)? onSeek;
 
   const AudioScreen({
     Key? key,
@@ -26,6 +29,7 @@ class AudioScreen extends StatefulWidget {
     required this.onNext,
     required this.onPrevious,
     this.onMoreOptions,
+    this.onSeek,
   }) : super(key: key);
 
   @override
@@ -90,135 +94,149 @@ class _AudioScreenState extends State<AudioScreen>
         (widget.totalDurationMs != null && widget.totalDurationMs! > 0)
         ? widget.totalDurationMs!.toDouble()
         : (_sliderValue + 1000);
-    return Center(
-      child: widget.isAudioPlayerReady
-          ? Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.audiotrack,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 80,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: widget.onSwitchToVideo,
-                  icon: Icon(
-                    Icons.videocam,
+    return Container(
+      decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
+      child: Center(
+        child: widget.isAudioPlayerReady
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.audiotrack,
                     color: Theme.of(context).colorScheme.primary,
+                    size: 80,
                   ),
-                  label: Text(
-                    'Switch to Video',
-                    style: GoogleFonts.poppins(
-                      color: Theme.of(context).colorScheme.onPrimary,
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: widget.onSwitchToVideo,
+                    icon: Icon(
+                      Icons.videocam,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  onPressed: () => _showEqualizerDialog(context),
-                  icon: Icon(
-                    Icons.equalizer,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                  label: Text(
-                    'Equalizer',
-                    style: GoogleFonts.poppins(
-                      color: Theme.of(context).colorScheme.onSecondary,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.secondary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.timer,
-                        color: _sleepTimer == null
-                            ? Theme.of(context).colorScheme.onSurface
-                            : Theme.of(context).colorScheme.error,
+                    label: Text(
+                      'Switch to Video',
+                      style: GoogleFonts.poppins(
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
-                      onPressed: () => _showTimerSelector(context),
                     ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.skip_previous,
-                        color: Theme.of(context).colorScheme.onSurface,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    onPressed: () => _showEqualizerDialog(context),
+                    icon: Icon(
+                      Icons.equalizer,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                    label: Text(
+                      'Equalizer',
+                      style: GoogleFonts.poppins(
+                        color: Theme.of(context).colorScheme.onSecondary,
                       ),
-                      iconSize: 48,
-                      onPressed: widget.onPrevious,
                     ),
-                    IconButton(
-                      iconSize: 64,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      icon: Icon(
-                        widget.playbackState == 'playing'
-                            ? Icons.pause
-                            : Icons.play_arrow,
-                      ),
-                      onPressed: () async {
-                        if (widget.playbackState == 'playing') {
-                          (context as Element).markNeedsBuild();
-                          await NativeAudioService.pauseAudio();
-                        } else {
-                          (context as Element).markNeedsBuild();
-                          await NativeAudioService.playAudio();
-                        }
-                      },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
                     ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.skip_next,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      iconSize: 48,
-                      onPressed: widget.onNext,
-                    ),
-                    if (widget.onMoreOptions != null)
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       IconButton(
                         icon: Icon(
-                          Icons.more_vert,
+                          Icons.timer,
+                          color: _sleepTimer == null
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context).colorScheme.error,
+                        ),
+                        onPressed: () => _showTimerSelector(context),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.skip_previous,
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        onPressed: widget.onMoreOptions,
+                        iconSize: 48,
+                        onPressed: widget.onPrevious,
                       ),
-                  ],
-                ),
-                Slider(
-                  value: _sliderValue.clamp(0, maxValue),
-                  min: 0,
-                  max: maxValue,
-                  onChanged: (value) {
-                    setState(() {
-                      _isUserSeeking = true;
-                      _sliderValue = value;
-                      _seekTarget = value.toInt();
-                    });
-                  },
-                  onChangeEnd: (value) async {
-                    setState(() {
-                      _isUserSeeking = false;
-                    });
-                    await NativeAudioService.seekTo(value.toInt());
-                  },
-                ),
-                Text(
-                  '${widget.formatDuration(Duration(milliseconds: _sliderValue.toInt()))} / '
-                  '${widget.formatDuration(Duration(milliseconds: widget.totalDurationMs ?? 0))}',
-                  style: GoogleFonts.poppins(
-                    color: Theme.of(context).colorScheme.onSurface,
+                      // Glassmorphic Play/Pause Button
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.13),
+                          borderRadius: BorderRadius.circular(40),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.18),
+                            width: 2,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(40),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: IconButton(
+                              iconSize: 64,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              icon: Icon(
+                                widget.playbackState == 'playing'
+                                    ? Icons.pause
+                                    : Icons.play_arrow,
+                              ),
+                              onPressed: () async {
+                                if (widget.playbackState == 'playing') {
+                                  (context as Element).markNeedsBuild();
+                                  await NativeAudioService.pauseAudio();
+                                } else {
+                                  (context as Element).markNeedsBuild();
+                                  await NativeAudioService.playAudio();
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.skip_next,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        iconSize: 48,
+                        onPressed: widget.onNext,
+                      ),
+                      if (widget.onMoreOptions != null)
+                        IconButton(
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          onPressed: widget.onMoreOptions,
+                        ),
+                    ],
                   ),
-                ),
-              ],
-            )
-          : const CircularProgressIndicator(),
+                  Slider(
+                    value: _sliderValue.clamp(0, maxValue),
+                    min: 0,
+                    max: maxValue,
+                    onChanged: (value) {
+                      setState(() {
+                        _isUserSeeking = true;
+                        _sliderValue = value;
+                      });
+                    },
+                    onChangeEnd: (value) {
+                      setState(() {
+                        _isUserSeeking = false;
+                      });
+                      if (widget.onSeek != null) {
+                        widget.onSeek!(value.toInt());
+                      }
+                    },
+                  ),
+                ],
+              )
+            : const CircularProgressIndicator(),
+      ),
     );
   }
 

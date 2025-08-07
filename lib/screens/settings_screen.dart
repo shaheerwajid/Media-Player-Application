@@ -3,11 +3,13 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import 'dart:ui'; // Added for ImageFilter
 import 'package:google_fonts/google_fonts.dart';
+import '../theme_data.dart';
+import '../widgets/unified_card.dart';
 
 // Move _SettingsTile and _SettingsTileState to the top level, outside of SettingsScreen
 
 class _SettingsTile extends StatefulWidget {
-  final Icon leading;
+  final Widget leading; // changed from Icon to Widget
   final String title;
   final VoidCallback onTap;
   const _SettingsTile({
@@ -31,8 +33,11 @@ class _SettingsTileState extends State<_SettingsTile> {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          color: Colors.white.withOpacity(0.05),
-          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -54,7 +59,9 @@ class _SettingsTileState extends State<_SettingsTile> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: widget.leading,
@@ -63,22 +70,23 @@ class _SettingsTileState extends State<_SettingsTile> {
                   Expanded(
                     child: Text(
                       widget.title,
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFFCCD0CF),
+                        color: Colors.white,
                       ),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.chevron_right_rounded,
-                      color: Color(0xFF9BA8AB),
+                      color: Theme.of(context).colorScheme.secondary,
                       size: 20,
                     ),
                   ),
@@ -113,20 +121,8 @@ class SettingsScreen extends StatelessWidget {
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.6,
               ),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomLeft,
-                  end: Alignment.topRight,
-                  colors: [
-                    Color(0xFF06151C),
-                    Color(0xFF0C1A24),
-                    Color(0xFF172734),
-                    Color(0xFF2F404D),
-                    Color(0xFF64727A),
-                    Color(0xFFCCD1CF),
-                  ],
-                  stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-                ),
+              decoration: BoxDecoration(
+                gradient: AppThemes.currentMainGradient,
               ),
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
@@ -175,14 +171,13 @@ class SettingsScreen extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFF4A5C6A,
-                                    ).withOpacity(0.3),
+                                    color: AppThemes.currentPrimaryColor
+                                        .withOpacity(0.3),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.star,
-                                    color: Color(0xFFCCD0CF),
+                                    color: AppThemes.currentTextColor,
                                     size: 24,
                                   ),
                                 ),
@@ -193,7 +188,7 @@ class SettingsScreen extends StatelessWidget {
                                     style: GoogleFonts.poppins(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFFCCD0CF),
+                                      color: AppThemes.currentTextColor,
                                     ),
                                   ),
                                 ),
@@ -255,31 +250,65 @@ class SettingsScreen extends StatelessWidget {
                             child: Row(
                               children: [
                                 Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.05),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.1),
-                                        width: 1,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(28),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 18,
+                                        sigmaY: 18,
                                       ),
-                                    ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(12),
-                                        onTap: () => Navigator.pop(context),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 16,
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          vertical: 0,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            28,
                                           ),
-                                          child: Center(
-                                            child: Text(
-                                              'Cancel',
-                                              style: GoogleFonts.poppins(
-                                                color: const Color(0xFF9BA8AB),
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
+                                          color: Colors.white.withOpacity(0.13),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(
+                                                0xFF06141B,
+                                              ).withOpacity(0.18),
+                                              blurRadius: 18,
+                                              offset: const Offset(0, 6),
+                                            ),
+                                          ],
+                                          border: Border.all(
+                                            width: 1.2,
+                                            style: BorderStyle.solid,
+                                            color: Colors.white.withOpacity(
+                                              0.18,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            onTap: () => Navigator.pop(context),
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                    horizontal: 8,
+                                                  ),
+                                              child: Center(
+                                                child: Text(
+                                                  'Cancel',
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -290,68 +319,104 @@ class SettingsScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: const Color(
-                                        0xFF4A5C6A,
-                                      ).withOpacity(0.3),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: const Color(
-                                          0xFFCCD0CF,
-                                        ).withOpacity(0.2),
-                                        width: 1,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(28),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 18,
+                                        sigmaY: 18,
                                       ),
-                                    ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(12),
-                                        onTap: () {
-                                          setState(() => showCheckmark = true);
-                                          Future.delayed(
-                                            const Duration(milliseconds: 800),
-                                            () {
-                                              Navigator.pop(context);
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Thanks for rating us!',
-                                                    style: GoogleFonts.poppins(
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                  backgroundColor: const Color(
-                                                    0xFF4A5C6A,
-                                                  ),
-                                                  behavior:
-                                                      SnackBarBehavior.floating,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          12,
-                                                        ),
-                                                  ),
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          vertical: 0,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            28,
+                                          ),
+                                          color: Colors.white.withOpacity(0.13),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(
+                                                0xFF06141B,
+                                              ).withOpacity(0.18),
+                                              blurRadius: 18,
+                                              offset: const Offset(0, 6),
+                                            ),
+                                          ],
+                                          border: Border.all(
+                                            width: 1.2,
+                                            style: BorderStyle.solid,
+                                            color: Colors.white.withOpacity(
+                                              0.18,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            onTap: () {
+                                              setState(
+                                                () => showCheckmark = true,
+                                              );
+                                              Future.delayed(
+                                                const Duration(
+                                                  milliseconds: 800,
                                                 ),
+                                                () {
+                                                  Navigator.pop(context);
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'Thanks for rating us!',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                      ),
+                                                      backgroundColor: AppThemes
+                                                          .currentPrimaryColor,
+                                                      behavior: SnackBarBehavior
+                                                          .floating,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
                                               );
                                             },
-                                          );
-                                        },
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 16,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              'Submit',
-                                              style: GoogleFonts.poppins(
-                                                color: const Color(0xFFCCD0CF),
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                    horizontal: 8,
+                                                  ),
+                                              child: Center(
+                                                child: Text(
+                                                  'Submit',
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -388,21 +453,7 @@ class SettingsScreen extends StatelessWidget {
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.6,
             ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  Color(0xFF06151C),
-                  Color(0xFF0C1A24),
-                  Color(0xFF172734),
-                  Color(0xFF2F404D),
-                  Color(0xFF64727A),
-                  Color(0xFFCCD1CF),
-                ],
-                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-              ),
-            ),
+            decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(24),
@@ -450,14 +501,13 @@ class SettingsScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF4A5C6A,
-                                  ).withOpacity(0.3),
+                                  color: AppThemes.currentPrimaryColor
+                                      .withOpacity(0.3),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.privacy_tip,
-                                  color: Color(0xFFCCD0CF),
+                                  color: AppThemes.currentTextColor,
                                   size: 24,
                                 ),
                               ),
@@ -468,7 +518,7 @@ class SettingsScreen extends StatelessWidget {
                                   style: GoogleFonts.poppins(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFFCCD0CF),
+                                    color: AppThemes.currentTextColor,
                                   ),
                                 ),
                               ),
@@ -482,7 +532,7 @@ class SettingsScreen extends StatelessWidget {
                           child: Text(
                             'Privacy Policy will be added soon.',
                             style: GoogleFonts.poppins(
-                              color: const Color(0xFF9BA8AB),
+                              color: AppThemes.currentMutedTextColor,
                               fontSize: 16,
                               height: 1.5,
                             ),
@@ -492,32 +542,52 @@ class SettingsScreen extends StatelessWidget {
                         // Button
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4A5C6A).withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFCCD0CF).withOpacity(0.2),
-                                width: 1,
-                              ),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () => Navigator.pop(context),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(28),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(28),
+                                  color: Colors.white.withOpacity(0.13),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(
+                                        0xFF06141B,
+                                      ).withOpacity(0.18),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    width: 1.2,
+                                    style: BorderStyle.solid,
+                                    color: Colors.white.withOpacity(0.18),
                                   ),
-                                  child: Center(
-                                    child: Text(
-                                      'OK',
-                                      style: GoogleFonts.poppins(
-                                        color: const Color(0xFFCCD0CF),
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: () => Navigator.pop(context),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          'OK',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -550,21 +620,7 @@ class SettingsScreen extends StatelessWidget {
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.6,
             ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  Color(0xFF06151C),
-                  Color(0xFF0C1A24),
-                  Color(0xFF172734),
-                  Color(0xFF2F404D),
-                  Color(0xFF64727A),
-                  Color(0xFFCCD1CF),
-                ],
-                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-              ),
-            ),
+            decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(24),
@@ -612,14 +668,13 @@ class SettingsScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF4A5C6A,
-                                  ).withOpacity(0.3),
+                                  color: AppThemes.currentPrimaryColor
+                                      .withOpacity(0.3),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.feedback,
-                                  color: Color(0xFFCCD0CF),
+                                  color: AppThemes.currentTextColor,
                                   size: 24,
                                 ),
                               ),
@@ -630,7 +685,7 @@ class SettingsScreen extends StatelessWidget {
                                   style: GoogleFonts.poppins(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFFCCD0CF),
+                                    color: AppThemes.currentTextColor,
                                   ),
                                 ),
                               ),
@@ -644,7 +699,7 @@ class SettingsScreen extends StatelessWidget {
                           child: Text(
                             'Feedback form will be added soon.',
                             style: GoogleFonts.poppins(
-                              color: const Color(0xFF9BA8AB),
+                              color: AppThemes.currentMutedTextColor,
                               fontSize: 16,
                               height: 1.5,
                             ),
@@ -654,32 +709,52 @@ class SettingsScreen extends StatelessWidget {
                         // Button
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4A5C6A).withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFCCD0CF).withOpacity(0.2),
-                                width: 1,
-                              ),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () => Navigator.pop(context),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(28),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(28),
+                                  color: Colors.white.withOpacity(0.13),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(
+                                        0xFF06141B,
+                                      ).withOpacity(0.18),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    width: 1.2,
+                                    style: BorderStyle.solid,
+                                    color: Colors.white.withOpacity(0.18),
                                   ),
-                                  child: Center(
-                                    child: Text(
-                                      'OK',
-                                      style: GoogleFonts.poppins(
-                                        color: const Color(0xFFCCD0CF),
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: () => Navigator.pop(context),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          'OK',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -726,99 +801,147 @@ class SettingsScreen extends StatelessWidget {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Settings',
-          style: GoogleFonts.poppins(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.1,
-            color: const Color(0xFFCCD0CF),
-          ),
-        ),
+        title: Text('Settings', style: Theme.of(context).textTheme.titleLarge),
         elevation: 0,
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomLeft,
-              end: Alignment.topRight,
-              colors: [
-                Color(0xFF06151C),
-                Color(0xFF0C1A24),
-                Color(0xFF172734),
-                Color(0xFF2F404D),
-                Color(0xFF64727A),
-                Color(0xFFCCD1CF),
-              ],
-              stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-            ),
-          ),
+          decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         ),
-        foregroundColor: const Color(0xFFCCD0CF),
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         centerTitle: true,
       ),
       extendBodyBehindAppBar: true,
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomLeft,
-            end: Alignment.topRight,
-            colors: [
-              Color(0xFF06151C),
-              Color(0xFF0C1A24),
-              Color(0xFF172734),
-              Color(0xFF2F404D),
-              Color(0xFF64727A),
-              Color(0xFFCCD1CF),
-            ],
-            stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         child: SafeArea(
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
             children: [
-              _SettingsTile(
-                leading: const Icon(
-                  Icons.share_outlined,
-                  color: Color(0xFF4A5C6A),
+              UnifiedCard(
+                leading: Image.asset(
+                  'assets/shareapp.png',
+                  width: 28,
+                  height: 28,
                 ),
                 title: 'Share App',
                 onTap: () => _shareApp(context),
-              ),
-              _SettingsTile(
-                leading: const Icon(
-                  Icons.star_outline_rounded,
-                  color: Colors.amber,
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white.withOpacity(0.7),
                 ),
+              ),
+              UnifiedCard(
+                leading: Image.asset('assets/rate.png', width: 28, height: 28),
                 title: 'Rate App',
                 onTap: () => _showRateDialog(context),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white.withOpacity(0.7),
+                ),
               ),
-              _SettingsTile(
-                leading: const Icon(
-                  Icons.privacy_tip_outlined,
-                  color: Color(0xFF9BA8AB),
+              UnifiedCard(
+                leading: Image.asset(
+                  'assets/privacy_policy.png',
+                  width: 28,
+                  height: 28,
                 ),
                 title: 'Privacy Policy',
                 onTap: () => _showPrivacyPolicy(context),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white.withOpacity(0.7),
+                ),
               ),
-              _SettingsTile(
-                leading: const Icon(
-                  Icons.feedback_outlined,
-                  color: Color(0xFF9BA8AB),
+              UnifiedCard(
+                leading: Image.asset(
+                  'assets/feedback.png',
+                  width: 28,
+                  height: 28,
                 ),
                 title: 'Feedback',
                 onTap: () => _showFeedback(context),
-              ),
-              _SettingsTile(
-                leading: const Icon(
-                  Icons.exit_to_app_rounded,
-                  color: Color(0xFF9BA8AB),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white.withOpacity(0.7),
                 ),
+              ),
+              UnifiedCard(
+                leading: Image.asset('assets/theme.png', width: 28, height: 28),
+                title: 'Themes',
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      final currentTheme = AppThemes.currentThemeNotifier.value;
+                      return AlertDialog(
+                        title: Text(
+                          'Theme Selection',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (final theme in AppThemes.availableThemes)
+                              ListTile(
+                                leading: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    gradient: theme.mainGradient,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: currentTheme == theme
+                                          ? theme.secondaryColor
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  theme.name,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                ),
+                                trailing: currentTheme == theme
+                                    ? Icon(
+                                        Icons.check,
+                                        color: theme.secondaryColor,
+                                      )
+                                    : null,
+                                onTap: () {
+                                  AppThemes.currentThemeNotifier.value = theme;
+                                  Navigator.pop(context);
+                                },
+                              ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              'Cancel',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white.withOpacity(0.7),
+                ),
+              ),
+              UnifiedCard(
+                leading: Image.asset('assets/exit.png', width: 28, height: 28),
                 title: 'Exit App',
                 onTap: () => _exitApp(context),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white.withOpacity(0.7),
+                ),
               ),
             ],
           ),

@@ -8,6 +8,8 @@ import 'video_player_screen/video_player_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/skeleton_media_card.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme_data.dart';
+import '../widgets/unified_card.dart';
 
 class VideoScreen extends StatefulWidget {
   const VideoScreen({Key? key}) : super(key: key);
@@ -569,6 +571,7 @@ class _VideoScreenState extends State<VideoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: _isSearching
@@ -581,47 +584,33 @@ class _VideoScreenState extends State<VideoScreen> {
                   border: InputBorder.none,
                   hintStyle: Theme.of(context).textTheme.bodyMedium,
                   filled: true,
-                  fillColor: const Color(0xFF4A5C6A).withOpacity(0.18),
-                  prefixIcon: const Icon(
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.18),
+                  prefixIcon: Icon(
                     Icons.search_outlined,
-                    color: Color(0xFF4A5C6A),
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               )
             : Text(
                 'Video Browser',
-                style: GoogleFonts.poppins(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.1,
-                  color: const Color(0xFFCCD0CF),
-                ),
+                style: Theme.of(context).textTheme.titleLarge,
               ),
         elevation: 0,
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomLeft,
-              end: Alignment.topRight,
-              colors: [
-                Color(0xFF06151C),
-                Color(0xFF0C1A24),
-                Color(0xFF172734),
-                Color(0xFF2F404D),
-                Color(0xFF64727A),
-                Color(0xFFCCD1CF),
-              ],
-              stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-            ),
-          ),
+          decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         ),
-        foregroundColor: const Color(0xFFCCD0CF),
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         centerTitle: false,
         actions: [
           if (_isSearching)
             IconButton(
-              icon: const Icon(Icons.close_outlined, color: Color(0xFF9BA8AB)),
+              icon: Icon(
+                Icons.close_outlined,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
               onPressed: () {
                 setState(() {
                   _isSearching = false;
@@ -643,601 +632,617 @@ class _VideoScreenState extends State<VideoScreen> {
           ],
         ],
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // History Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'History',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFCCD0CF),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      color: Color(0xFF9BA8AB),
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      _clearHistory();
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 110,
-                child: _historyVideos.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No recent videos',
-                          style: GoogleFonts.poppins(
-                            color: const Color(0xFF9BA8AB),
-                            fontSize: 14,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _historyVideos.length,
-                        itemBuilder: (context, index) {
-                          final asset = _historyVideos[index];
-                          return _buildHistoryCard(asset, index);
-                        },
+      body: Container(
+        decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // History Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'History',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-              ),
-              const SizedBox(height: 24),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: Theme.of(context).colorScheme.secondary,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        _clearHistory();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 110,
+                  child: _historyVideos.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No recent videos',
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF9BA8AB),
+                              fontSize: 14,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _historyVideos.length,
+                          itemBuilder: (context, index) {
+                            final asset = _historyVideos[index];
+                            return _buildHistoryCard(asset, index);
+                          },
+                        ),
+                ),
+                const SizedBox(height: 24),
 
-              // Filter Tabs
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 48,
+                // Filter Tabs
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final tabWidth = constraints.maxWidth / 3;
+                            return Stack(
+                              children: [
+                                // Sliding indicator
+                                AnimatedPositioned(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                  left: _selectedTabIndex * tabWidth,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    width: tabWidth,
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF4A5C6A,
+                                      ).withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(24),
+                                      border: Border.all(
+                                        color: const Color(
+                                          0xFFCCD0CF,
+                                        ).withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Tab buttons
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildFilterTab('Videos', 0),
+                                    ),
+                                    Expanded(
+                                      child: _buildFilterTab('Folder', 1),
+                                    ),
+                                    Expanded(
+                                      child: _buildFilterTab('Playlist', 2),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Always reserve space for sort button to prevent layout shift
+                    SizedBox(
+                      width: 48,
+                      child: _selectedTabIndex == 0 && !_showFolders
+                          ? Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.1),
+                                  width: 1,
+                                ),
+                              ),
+                              child: IconButton(
+                                icon: Image.asset(
+                                  'assets/sort.png',
+                                  width: 22,
+                                  height: 22,
+                                ),
+                                onPressed: () {
+                                  _showSortDialog();
+                                },
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 4), // 1px padding between buttons
+                    Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.1),
                           width: 1,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
                       ),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final tabWidth = constraints.maxWidth / 3;
-                          return Stack(
-                            children: [
-                              // Sliding indicator
-                              AnimatedPositioned(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                                left: _selectedTabIndex * tabWidth,
-                                top: 0,
-                                bottom: 0,
-                                child: Container(
-                                  width: tabWidth,
-                                  decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFF4A5C6A,
-                                    ).withOpacity(0.4),
-                                    borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(
-                                      color: const Color(
-                                        0xFFCCD0CF,
-                                      ).withOpacity(0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // Tab buttons
-                              Row(
-                                children: [
-                                  Expanded(child: _buildFilterTab('Videos', 0)),
-                                  Expanded(child: _buildFilterTab('Folder', 1)),
-                                  Expanded(
-                                    child: _buildFilterTab('Playlist', 2),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
+                      child: IconButton(
+                        icon: Image.asset(
+                          'assets/view.png',
+                          width: 22,
+                          height: 22,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isGridView = !_isGridView;
+                          });
                         },
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Always reserve space for sort button to prevent layout shift
-                  SizedBox(
-                    width: 48,
-                    child: _selectedTabIndex == 0 && !_showFolders
-                        ? Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.1),
-                                width: 1,
-                              ),
-                            ),
-                            child: IconButton(
-                              icon: Image.asset(
-                                'assets/sort.png',
-                                width: 22,
-                                height: 22,
-                              ),
-                              onPressed: () {
-                                _showSortDialog();
-                              },
-                            ),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 4), // 1px padding between buttons
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
-                        width: 1,
-                      ),
-                    ),
-                    child: IconButton(
-                      icon: Image.asset(
-                        'assets/view.png',
-                        width: 22,
-                        height: 22,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isGridView = !_isGridView;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-              // Video List
-              Expanded(
-                child: _loading
-                    ? const SkeletonList(itemCount: 8)
-                    : (_showFolders ||
-                          _selectedTabIndex == 1) // 1 is the Folder tab index
-                    ? _selectedFolder == null
-                          ? _folderList.isEmpty
-                                ? const SkeletonList(itemCount: 6)
-                                : _isGridView
-                                ? GridView.builder(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 8,
-                                    ),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2,
-                                          childAspectRatio: 1.2,
-                                        ),
-                                    itemCount: _folderList.length,
-                                    itemBuilder: (context, index) {
-                                      final folder = _folderList[index];
-                                      final count =
-                                          _folderMap[folder]?.length ?? 0;
-                                      return TweenAnimationBuilder<double>(
-                                        duration: Duration(
-                                          milliseconds: 600 + (index * 50),
-                                        ),
-                                        curve: Curves.easeOutCubic,
-                                        tween: Tween<double>(
-                                          begin: 0.0,
-                                          end: 1.0,
-                                        ),
-                                        builder: (context, value, child) {
-                                          return Transform.translate(
-                                            offset: Offset(0, 20 * (1 - value)),
-                                            child: Opacity(
-                                              opacity: value,
-                                              child: Transform.scale(
-                                                scale: 0.8 + (0.2 * value),
-                                                child: _buildFolderCard(
-                                                  folder,
-                                                  count,
-                                                  index,
-                                                ),
+                // Video List
+                Expanded(
+                  child: _loading
+                      ? const SkeletonList(itemCount: 8)
+                      : (_showFolders ||
+                            _selectedTabIndex == 1) // 1 is the Folder tab index
+                      ? _selectedFolder == null
+                            ? _folderList.isEmpty
+                                  ? const SkeletonList(itemCount: 6)
+                                  : _isGridView
+                                  ? GridView.builder(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 8,
+                                      ),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: 2,
+                                            childAspectRatio: 1.2,
+                                            crossAxisSpacing: 16,
+                                            mainAxisSpacing: 16,
+                                          ),
+                                      itemCount: _folderList.length,
+                                      itemBuilder: (context, index) {
+                                        final folder = _folderList[index];
+                                        final count =
+                                            _folderMap[folder]?.length ?? 0;
+                                        return TweenAnimationBuilder<double>(
+                                          duration: Duration(
+                                            milliseconds: 600 + (index * 50),
+                                          ),
+                                          curve: Curves.easeOutCubic,
+                                          tween: Tween<double>(
+                                            begin: 0.0,
+                                            end: 1.0,
+                                          ),
+                                          builder: (context, value, child) {
+                                            return Transform.translate(
+                                              offset: Offset(
+                                                0,
+                                                20 * (1 - value),
                                               ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  )
-                                : ListView.builder(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                    itemCount: _folderList.length,
-                                    itemBuilder: (context, index) {
-                                      final folder = _folderList[index];
-                                      final count =
-                                          _folderMap[folder]?.length ?? 0;
-                                      return TweenAnimationBuilder<double>(
-                                        duration: Duration(
-                                          milliseconds: 600 + (index * 50),
-                                        ),
-                                        curve: Curves.easeOutCubic,
-                                        tween: Tween<double>(
-                                          begin: 0.0,
-                                          end: 1.0,
-                                        ),
-                                        builder: (context, value, child) {
-                                          return Transform.translate(
-                                            offset: Offset(0, 20 * (1 - value)),
-                                            child: Opacity(
-                                              opacity: value,
-                                              child: Transform.scale(
-                                                scale: 0.8 + (0.2 * value),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        vertical: 6,
-                                                      ),
-                                                  child: _buildFolderListCard(
+                                              child: Opacity(
+                                                opacity: value,
+                                                child: Transform.scale(
+                                                  scale: 0.8 + (0.2 * value),
+                                                  child: _buildFolderCard(
                                                     folder,
                                                     count,
                                                     index,
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  )
-                          : Column(
-                              children: [
-                                _buildBackToFoldersCard(),
-                                Expanded(child: _buildFolderVideosList()),
-                              ],
-                            )
-                    : _selectedTabIndex ==
-                          2 // 2 is the Playlist tab index
-                    ? _selectedPlaylist == null
-                          ? _playlists.isEmpty
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'No playlists found.',
-                                          style: GoogleFonts.poppins(
-                                            color: const Color(0xFF9BA8AB),
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Create playlists to organize your videos.',
-                                          style: GoogleFonts.poppins(
-                                            color: const Color(0xFF9BA8AB),
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : _isGridView
-                                ? Column(
-                                    children: [
-                                      // Header with title and plus icon
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 12,
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              'Playlists(${_playlists.length})',
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.white,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            IconButton(
-                                              onPressed: () {
-                                                _showCreatePlaylistDialog();
-                                              },
-                                              icon: const Icon(
-                                                Icons.add,
-                                                color: Colors.white,
-                                                size: 24,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Playlist grid
-                                      Expanded(
-                                        child: GridView.builder(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 8,
-                                          ),
-                                          gridDelegate:
-                                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                                crossAxisCount: 2,
-                                                childAspectRatio: 1.2,
-                                              ),
-                                          itemCount: _playlists.length,
-                                          itemBuilder: (context, index) {
-                                            final playlist = _playlists[index];
-                                            final count = _getPlaylistVideos(
-                                              playlist,
-                                            ).length;
-                                            return TweenAnimationBuilder<
-                                              double
-                                            >(
-                                              duration: Duration(
-                                                milliseconds:
-                                                    600 + (index * 50),
-                                              ),
-                                              curve: Curves.easeOutCubic,
-                                              tween: Tween<double>(
-                                                begin: 0.0,
-                                                end: 1.0,
-                                              ),
-                                              builder: (context, value, child) {
-                                                return Transform.translate(
-                                                  offset: Offset(
-                                                    0,
-                                                    20 * (1 - value),
-                                                  ),
-                                                  child: Opacity(
-                                                    opacity: value,
-                                                    child: Transform.scale(
-                                                      scale:
-                                                          0.8 + (0.2 * value),
-                                                      child: _buildPlaylistCard(
-                                                        playlist,
-                                                        count,
-                                                        index,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              },
                                             );
                                           },
-                                        ),
+                                        );
+                                      },
+                                    )
+                                  : ListView.builder(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
                                       ),
-                                    ],
-                                  )
-                                : Column(
-                                    children: [
-                                      // Header with title and plus icon
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 12,
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              'Playlists(${_playlists.length})',
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.white,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            IconButton(
-                                              onPressed: () {
-                                                _showCreatePlaylistDialog();
-                                              },
-                                              icon: const Icon(
-                                                Icons.add,
-                                                color: Colors.white,
-                                                size: 24,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Playlist list
-                                      Expanded(
-                                        child: ListView.builder(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 8,
+                                      itemCount: _folderList.length,
+                                      itemBuilder: (context, index) {
+                                        final folder = _folderList[index];
+                                        final count =
+                                            _folderMap[folder]?.length ?? 0;
+                                        return TweenAnimationBuilder<double>(
+                                          duration: Duration(
+                                            milliseconds: 600 + (index * 50),
                                           ),
-                                          itemCount: _playlists.length,
-                                          itemBuilder: (context, index) {
-                                            final playlist = _playlists[index];
-                                            final count = _getPlaylistVideos(
-                                              playlist,
-                                            ).length;
-                                            return TweenAnimationBuilder<
-                                              double
-                                            >(
-                                              duration: Duration(
-                                                milliseconds:
-                                                    600 + (index * 50),
+                                          curve: Curves.easeOutCubic,
+                                          tween: Tween<double>(
+                                            begin: 0.0,
+                                            end: 1.0,
+                                          ),
+                                          builder: (context, value, child) {
+                                            return Transform.translate(
+                                              offset: Offset(
+                                                0,
+                                                20 * (1 - value),
                                               ),
-                                              curve: Curves.easeOutCubic,
-                                              tween: Tween<double>(
-                                                begin: 0.0,
-                                                end: 1.0,
-                                              ),
-                                              builder: (context, value, child) {
-                                                return Transform.translate(
-                                                  offset: Offset(
-                                                    0,
-                                                    20 * (1 - value),
+                                              child: Opacity(
+                                                opacity: value,
+                                                child: Transform.scale(
+                                                  scale: 0.8 + (0.2 * value),
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          vertical: 6,
+                                                        ),
+                                                    child: _buildFolderListCard(
+                                                      folder,
+                                                      count,
+                                                      index,
+                                                    ),
                                                   ),
-                                                  child: Opacity(
-                                                    opacity: value,
-                                                    child: Transform.scale(
-                                                      scale:
-                                                          0.8 + (0.2 * value),
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              vertical: 6,
-                                                            ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    )
+                            : Column(
+                                children: [
+                                  _buildBackToFoldersCard(),
+                                  Expanded(child: _buildFolderVideosList()),
+                                ],
+                              )
+                      : _selectedTabIndex ==
+                            2 // 2 is the Playlist tab index
+                      ? _selectedPlaylist == null
+                            ? _playlists.isEmpty
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'No playlists found.',
+                                            style: GoogleFonts.poppins(
+                                              color: const Color(0xFF9BA8AB),
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Create playlists to organize your videos.',
+                                            style: GoogleFonts.poppins(
+                                              color: const Color(0xFF9BA8AB),
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : _isGridView
+                                  ? Column(
+                                      children: [
+                                        // Header with title and plus icon
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Playlists(${_playlists.length})',
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.white,
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              IconButton(
+                                                onPressed: () {
+                                                  _showCreatePlaylistDialog();
+                                                },
+                                                icon: const Icon(
+                                                  Icons.add,
+                                                  color: Colors.white,
+                                                  size: 24,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // Playlist grid
+                                        Expanded(
+                                          child: GridView.builder(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 8,
+                                            ),
+                                            gridDelegate:
+                                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                                  crossAxisCount: 2,
+                                                  childAspectRatio: 1.2,
+                                                ),
+                                            itemCount: _playlists.length,
+                                            itemBuilder: (context, index) {
+                                              final playlist =
+                                                  _playlists[index];
+                                              final count = _getPlaylistVideos(
+                                                playlist,
+                                              ).length;
+                                              return TweenAnimationBuilder<
+                                                double
+                                              >(
+                                                duration: Duration(
+                                                  milliseconds:
+                                                      600 + (index * 50),
+                                                ),
+                                                curve: Curves.easeOutCubic,
+                                                tween: Tween<double>(
+                                                  begin: 0.0,
+                                                  end: 1.0,
+                                                ),
+                                                builder: (context, value, child) {
+                                                  return Transform.translate(
+                                                    offset: Offset(
+                                                      0,
+                                                      20 * (1 - value),
+                                                    ),
+                                                    child: Opacity(
+                                                      opacity: value,
+                                                      child: Transform.scale(
+                                                        scale:
+                                                            0.8 + (0.2 * value),
                                                         child:
-                                                            _buildPlaylistListCard(
+                                                            _buildPlaylistCard(
                                                               playlist,
                                                               count,
                                                               index,
                                                             ),
                                                       ),
                                                     ),
-                                                  ),
-                                                );
-                                              },
-                                            );
-                                          },
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  )
-                          : Column(
-                              children: [
-                                _buildBackToPlaylistsCard(),
-                                Expanded(child: _buildPlaylistVideosList()),
-                              ],
-                            )
-                    : _getVideosToShow().isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _isSearching
-                                ? Icon(
-                                    Icons.search_off,
-                                    color: const Color(0xFF9BA8AB),
-                                    size: 48,
-                                  )
-                                : _selectedPlaylist != null
-                                ? Image.asset(
-                                    'assets/favourite.png',
-                                    width: 48,
-                                    height: 48,
-                                    color: const Color(0xFF9BA8AB),
-                                  )
-                                : Icon(
-                                    Icons.video_library_outlined,
-                                    color: const Color(0xFF9BA8AB),
-                                    size: 48,
-                                  ),
-                            const SizedBox(height: 16),
-                            Text(
+                                      ],
+                                    )
+                                  : Column(
+                                      children: [
+                                        // Header with title and plus icon
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Playlists(${_playlists.length})',
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.white,
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              IconButton(
+                                                onPressed: () {
+                                                  _showCreatePlaylistDialog();
+                                                },
+                                                icon: const Icon(
+                                                  Icons.add,
+                                                  color: Colors.white,
+                                                  size: 24,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // Playlist list
+                                        Expanded(
+                                          child: ListView.builder(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 8,
+                                            ),
+                                            itemCount: _playlists.length,
+                                            itemBuilder: (context, index) {
+                                              final playlist =
+                                                  _playlists[index];
+                                              final count = _getPlaylistVideos(
+                                                playlist,
+                                              ).length;
+                                              return TweenAnimationBuilder<
+                                                double
+                                              >(
+                                                duration: Duration(
+                                                  milliseconds:
+                                                      600 + (index * 50),
+                                                ),
+                                                curve: Curves.easeOutCubic,
+                                                tween: Tween<double>(
+                                                  begin: 0.0,
+                                                  end: 1.0,
+                                                ),
+                                                builder: (context, value, child) {
+                                                  return Transform.translate(
+                                                    offset: Offset(
+                                                      0,
+                                                      20 * (1 - value),
+                                                    ),
+                                                    child: Opacity(
+                                                      opacity: value,
+                                                      child: Transform.scale(
+                                                        scale:
+                                                            0.8 + (0.2 * value),
+                                                        child: Padding(
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                vertical: 6,
+                                                              ),
+                                                          child:
+                                                              _buildPlaylistListCard(
+                                                                playlist,
+                                                                count,
+                                                                index,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                            : Column(
+                                children: [
+                                  _buildBackToPlaylistsCard(),
+                                  Expanded(child: _buildPlaylistVideosList()),
+                                ],
+                              )
+                      : _getVideosToShow().isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
                               _isSearching
-                                  ? 'No videos found matching your search.'
+                                  ? Icon(
+                                      Icons.search_off,
+                                      color: const Color(0xFF9BA8AB),
+                                      size: 48,
+                                    )
                                   : _selectedPlaylist != null
-                                  ? 'No videos in this playlist.'
-                                  : 'No videos found.',
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFF9BA8AB),
-                                fontSize: 16,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      )
-                    : _isGridView
-                    ? GridView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
-                        ),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 0.8,
-                            ),
-                        itemCount: _getVideosToShow().length,
-                        itemBuilder: (context, index) {
-                          final asset = _getVideosToShow()[index];
-                          return TweenAnimationBuilder<double>(
-                            duration: Duration(
-                              milliseconds: 600 + (index * 50),
-                            ),
-                            curve: Curves.easeOutCubic,
-                            tween: Tween<double>(begin: 0.0, end: 1.0),
-                            builder: (context, value, child) {
-                              return Transform.translate(
-                                offset: Offset(0, 20 * (1 - value)),
-                                child: Opacity(
-                                  opacity: value,
-                                  child: Transform.scale(
-                                    scale: 0.8 + (0.2 * value),
-                                    child: _buildGridVideoCard(asset, index),
-                                  ),
+                                  ? Image.asset(
+                                      'assets/favourite.png',
+                                      width: 48,
+                                      height: 48,
+                                      color: const Color(0xFF9BA8AB),
+                                    )
+                                  : Icon(
+                                      Icons.video_library_outlined,
+                                      color: const Color(0xFF9BA8AB),
+                                      size: 48,
+                                    ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _isSearching
+                                    ? 'No videos found matching your search.'
+                                    : _selectedPlaylist != null
+                                    ? 'No videos in this playlist.'
+                                    : 'No videos found.',
+                                style: GoogleFonts.poppins(
+                                  color: const Color(0xFF9BA8AB),
+                                  fontSize: 16,
                                 ),
-                              );
-                            },
-                          );
-                        },
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _getVideosToShow().length,
-                        itemBuilder: (context, index) {
-                          final asset = _getVideosToShow()[index];
-                          return TweenAnimationBuilder<double>(
-                            duration: Duration(
-                              milliseconds: 600 + (index * 50),
-                            ),
-                            curve: Curves.easeOutCubic,
-                            tween: Tween<double>(begin: 0.0, end: 1.0),
-                            builder: (context, value, child) {
-                              return Transform.translate(
-                                offset: Offset(0, 20 * (1 - value)),
-                                child: Opacity(
-                                  opacity: value,
-                                  child: Transform.scale(
-                                    scale: 0.8 + (0.2 * value),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 6,
-                                      ),
-                                      child: _buildVideoCard(asset, index),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        )
+                      : _isGridView
+                      ? GridView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 8,
+                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.8,
+                              ),
+                          itemCount: _getVideosToShow().length,
+                          itemBuilder: (context, index) {
+                            final asset = _getVideosToShow()[index];
+                            return TweenAnimationBuilder<double>(
+                              duration: Duration(
+                                milliseconds: 600 + (index * 50),
+                              ),
+                              curve: Curves.easeOutCubic,
+                              tween: Tween<double>(begin: 0.0, end: 1.0),
+                              builder: (context, value, child) {
+                                return Transform.translate(
+                                  offset: Offset(0, 20 * (1 - value)),
+                                  child: Opacity(
+                                    opacity: value,
+                                    child: Transform.scale(
+                                      scale: 0.8 + (0.2 * value),
+                                      child: _buildGridVideoCard(asset, index),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-              ),
-            ],
+                                );
+                              },
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          itemCount: _getVideosToShow().length,
+                          itemBuilder: (context, index) {
+                            final asset = _getVideosToShow()[index];
+                            return TweenAnimationBuilder<double>(
+                              duration: Duration(
+                                milliseconds: 600 + (index * 50),
+                              ),
+                              curve: Curves.easeOutCubic,
+                              tween: Tween<double>(begin: 0.0, end: 1.0),
+                              builder: (context, value, child) {
+                                return Transform.translate(
+                                  offset: Offset(0, 20 * (1 - value)),
+                                  child: Opacity(
+                                    opacity: value,
+                                    child: Transform.scale(
+                                      scale: 0.8 + (0.2 * value),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 6,
+                                        ),
+                                        child: _buildVideoCard(asset, index),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1246,36 +1251,41 @@ class _VideoScreenState extends State<VideoScreen> {
 
   Widget _buildFilterTab(String label, int index) {
     final isSelected = _selectedTabIndex == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedTabIndex = index;
-          if (label == 'Folder') {
-            _showFolders = true;
-            _selectedFolder = null;
-          } else if (label == 'Playlist') {
-            _showFolders = false;
-            _selectedFolder = null;
-            _selectedPlaylist = null;
-          } else {
-            _showFolders = false;
-            _selectedFolder = null;
-          }
-        });
-      },
-      child: Container(
-        child: Center(
-          child: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            style: GoogleFonts.poppins(
-              color: isSelected
-                  ? const Color(0xFFCCD0CF)
-                  : const Color(0xFF9BA8AB),
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              fontSize: 14,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () {
+          setState(() {
+            _selectedTabIndex = index;
+            if (label == 'Folder') {
+              _showFolders = true;
+              _selectedFolder = null;
+            } else if (label == 'Playlist') {
+              _showFolders = false;
+              _selectedFolder = null;
+              _selectedPlaylist = null;
+            } else {
+              _showFolders = false;
+              _selectedFolder = null;
+            }
+          });
+        },
+        child: Container(
+          width: double.infinity,
+          child: Center(
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              style: GoogleFonts.poppins(
+                color: isSelected
+                    ? const Color(0xFFCCD0CF)
+                    : const Color(0xFF9BA8AB),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 14,
+              ),
+              child: Text(label),
             ),
-            child: Text(label),
           ),
         ),
       ),
@@ -1363,192 +1373,121 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 
   Widget _buildVideoCard(AssetEntity asset, int index) {
-    return GestureDetector(
-      onTap: () async {
-        final fullList = _videoAssets;
-        final initialIndex = fullList.indexWhere((a) => a.id == asset.id);
-        if (initialIndex != -1) {
-          _addToHistory(asset);
-          final result = await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => VideoPlayerScreen(
-                videoAssets: fullList,
-                initialIndex: initialIndex,
-              ),
-            ),
-          );
-          if (result == true) {
-            _loadFavourites();
-            setState(() {});
+    return FutureBuilder<File?>(
+      future: asset.file,
+      builder: (context, snapshot) {
+        String dateText = 'Unknown';
+        if (snapshot.hasData && snapshot.data != null) {
+          try {
+            final file = snapshot.data!;
+            final stat = file.statSync();
+            final now = DateTime.now();
+            final fileDate = stat.modified;
+            final difference = now.difference(fileDate);
+            if (difference.inDays == 0) {
+              dateText = 'Today';
+            } else if (difference.inDays == 1) {
+              dateText = 'Yesterday';
+            } else if (difference.inDays < 7) {
+              dateText = '${difference.inDays} days ago';
+            } else if (difference.inDays < 30) {
+              final weeks = (difference.inDays / 7).floor();
+              dateText = '${weeks} week${weeks == 1 ? '' : 's'} ago';
+            } else if (difference.inDays < 365) {
+              final months = (difference.inDays / 30).floor();
+              dateText = '${months} month${months == 1 ? '' : 's'} ago';
+            } else {
+              final years = (difference.inDays / 365).floor();
+              dateText = '${years} year${years == 1 ? '' : 's'} ago';
+            }
+          } catch (e) {
+            dateText = 'Unknown';
           }
         }
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFF11212D).withOpacity(0.4),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF06141B).withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-          border: Border.all(
-            width: 1,
-            style: BorderStyle.solid,
-            color: const Color(0xFF4A5C6A).withOpacity(0.3),
-          ),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Thumbnail
-              FutureBuilder<Uint8List?>(
-                future: asset.thumbnailDataWithSize(ThumbnailSize(80, 80)),
-                builder: (context, snapshot) {
-                  Widget thumbWidget;
-                  if (snapshot.connectionState == ConnectionState.done &&
-                      snapshot.hasData &&
-                      snapshot.data != null) {
-                    thumbWidget = ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.memory(
-                        snapshot.data!,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                      ),
-                    );
-                  } else {
-                    thumbWidget = Icon(
-                      Icons.movie_outlined,
-                      size: 32,
-                      color: const Color(0xFFCCD0CF),
-                    );
-                  }
-                  return Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: const Color(0xFF253745),
-                    ),
-                    child: thumbWidget,
-                  );
-                },
-              ),
-              const SizedBox(width: 12),
-              // Details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      asset.title ?? 'Unknown',
-                      style: const TextStyle(
-                        color: Color(0xFFCCD0CF),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    FutureBuilder<File?>(
-                      future: asset.file,
-                      builder: (context, snapshot) {
-                        if (!mounted) {
-                          return const SizedBox.shrink();
-                        }
-
-                        if (snapshot.hasData && snapshot.data != null) {
-                          try {
-                            final file = snapshot.data!;
-                            final stat = file.statSync();
-                            final now = DateTime.now();
-                            final fileDate = stat.modified;
-                            final difference = now.difference(fileDate);
-
-                            String dateText;
-                            if (difference.inDays == 0) {
-                              dateText = 'Today';
-                            } else if (difference.inDays == 1) {
-                              dateText = 'Yesterday';
-                            } else if (difference.inDays < 7) {
-                              dateText = '${difference.inDays} days ago';
-                            } else if (difference.inDays < 30) {
-                              final weeks = (difference.inDays / 7).floor();
-                              dateText =
-                                  '${weeks} week${weeks == 1 ? '' : 's'} ago';
-                            } else if (difference.inDays < 365) {
-                              final months = (difference.inDays / 30).floor();
-                              dateText =
-                                  '${months} month${months == 1 ? '' : 's'} ago';
-                            } else {
-                              final years = (difference.inDays / 365).floor();
-                              dateText =
-                                  '${years} year${years == 1 ? '' : 's'} ago';
-                            }
-
-                            return Text(
-                              dateText,
-                              style: const TextStyle(
-                                color: Color(0xFF9BA8AB),
-                                fontSize: 14,
-                              ),
-                            );
-                          } catch (e) {
-                            return Text(
-                              'Unknown',
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFF9BA8AB),
-                                fontSize: 14,
-                              ),
-                            );
-                          }
-                        } else {
-                          return Text(
-                            'Unknown',
-                            style: GoogleFonts.poppins(
-                              color: const Color(0xFF9BA8AB),
-                              fontSize: 14,
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ],
+        return GestureDetector(
+          onTap: () async {
+            final fullList = _videoAssets;
+            final initialIndex = fullList.indexWhere((a) => a.id == asset.id);
+            if (initialIndex != -1) {
+              _addToHistory(asset);
+              final result = await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => VideoPlayerScreen(
+                    videoAssets: fullList,
+                    initialIndex: initialIndex,
+                  ),
                 ),
-              ),
-              // Favourite icon and playlist button
-              Column(
-                children: [
-                  Image.asset(
-                    'assets/favourite.png',
-                    width: 20,
-                    height: 20,
-                    color: _favourites.contains(asset.id)
-                        ? Colors.amber
-                        : const Color(0xFF9BA8AB),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () {
-                      _showAddToPlaylistDialog(asset);
-                    },
-                    child: const Icon(
-                      Icons.playlist_add,
-                      color: Color(0xFF9BA8AB),
-                      size: 20,
+              );
+              if (result == true) {
+                _loadFavourites();
+                setState(() {});
+              }
+            }
+          },
+          child: UnifiedCard(
+            leading: FutureBuilder<Uint8List?>(
+              future: asset.thumbnailDataWithSize(ThumbnailSize(80, 80)),
+              builder: (context, snapshot) {
+                Widget thumbWidget;
+                if (snapshot.connectionState == ConnectionState.done &&
+                    snapshot.hasData &&
+                    snapshot.data != null) {
+                  thumbWidget = ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      snapshot.data!,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
                     ),
+                  );
+                } else {
+                  thumbWidget = Icon(
+                    Icons.movie_outlined,
+                    size: 32,
+                    color: const Color(0xFFCCD0CF),
+                  );
+                }
+                return Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFF253745),
                   ),
-                ],
-              ),
-            ],
+                  child: thumbWidget,
+                );
+              },
+            ),
+            title: asset.title ?? 'Unknown',
+            subtitle: dateText,
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/favourite.png',
+                  width: 20,
+                  height: 20,
+                  color: _favourites.contains(asset.id)
+                      ? Colors.amber
+                      : const Color(0xFF9BA8AB),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {
+                    _showAddToPlaylistDialog(asset);
+                  },
+                  child: const Icon(
+                    Icons.playlist_add,
+                    color: Color(0xFF9BA8AB),
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1563,61 +1502,58 @@ class _VideoScreenState extends State<VideoScreen> {
           _selectedFolder = folder;
         });
       },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          color: overlayColor.withOpacity(0.28),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF06141B).withOpacity(0.18),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
-          border: Border.all(
-            width: 1.2,
-            style: BorderStyle.solid,
-            color: Colors.white.withOpacity(0.10),
-          ),
-        ),
-        clipBehavior: Clip.hardEdge,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.folder_outlined,
-                    size: 28,
-                    color: const Color(0xFFCCD0CF),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    folder.split(Platform.pathSeparator).last,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFFCCD0CF),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$count video${count == 1 ? '' : 's'}',
-                    style: const TextStyle(
-                      color: Color(0xFF9BA8AB),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              color: Colors.white.withOpacity(0.13),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF06141B).withOpacity(0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+              border: Border.all(
+                width: 1.2,
+                style: BorderStyle.solid,
+                color: Colors.white.withOpacity(0.18),
               ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.folder_outlined,
+                  size: 28,
+                  color: const Color(0xFFCCD0CF),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  folder.split(Platform.pathSeparator).last,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFFCCD0CF),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$count video${count == 1 ? '' : 's'}',
+                  style: const TextStyle(
+                    color: Color(0xFF9BA8AB),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1751,7 +1687,7 @@ class _VideoScreenState extends State<VideoScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          color: overlayColor.withOpacity(0.28),
+          color: Colors.white.withOpacity(0.13),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF06141B).withOpacity(0.18),
@@ -1885,7 +1821,7 @@ class _VideoScreenState extends State<VideoScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFF11212D).withOpacity(0.4),
+          color: Colors.white.withOpacity(0.13),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF06141B).withOpacity(0.1),
@@ -1893,11 +1829,7 @@ class _VideoScreenState extends State<VideoScreen> {
               offset: const Offset(0, 2),
             ),
           ],
-          border: Border.all(
-            width: 1,
-            style: BorderStyle.solid,
-            color: const Color(0xFF4A5C6A).withOpacity(0.3),
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.13), width: 1),
         ),
         child: Container(
           padding: const EdgeInsets.all(12),
@@ -1966,7 +1898,7 @@ class _VideoScreenState extends State<VideoScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFF11212D).withOpacity(0.4),
+          color: Colors.white.withOpacity(0.13),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF06141B).withOpacity(0.1),
@@ -1974,11 +1906,7 @@ class _VideoScreenState extends State<VideoScreen> {
               offset: const Offset(0, 2),
             ),
           ],
-          border: Border.all(
-            width: 1,
-            style: BorderStyle.solid,
-            color: const Color(0xFF4A5C6A).withOpacity(0.3),
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.13), width: 1),
         ),
         child: Container(
           padding: const EdgeInsets.all(12),
@@ -2098,7 +2026,7 @@ class _VideoScreenState extends State<VideoScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFF11212D).withOpacity(0.4),
+          color: Colors.white.withOpacity(0.13),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF06141B).withOpacity(0.1),
@@ -2106,11 +2034,7 @@ class _VideoScreenState extends State<VideoScreen> {
               offset: const Offset(0, 2),
             ),
           ],
-          border: Border.all(
-            width: 1,
-            style: BorderStyle.solid,
-            color: const Color(0xFF4A5C6A).withOpacity(0.3),
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.13), width: 1),
         ),
         child: Stack(
           children: [
@@ -2448,21 +2372,7 @@ class _VideoScreenState extends State<VideoScreen> {
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.7,
             ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  Color(0xFF06151C),
-                  Color(0xFF0C1A24),
-                  Color(0xFF172734),
-                  Color(0xFF2F404D),
-                  Color(0xFF64727A),
-                  Color(0xFFCCD1CF),
-                ],
-                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-              ),
-            ),
+            decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(24),
@@ -2638,16 +2548,9 @@ class _VideoScreenState extends State<VideoScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isSelected
-            ? const Color(0xFF4A5C6A).withOpacity(0.4)
-            : Colors.white.withOpacity(0.05),
+        color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isSelected
-              ? const Color(0xFFCCD0CF).withOpacity(0.3)
-              : Colors.white.withOpacity(0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -2658,7 +2561,6 @@ class _VideoScreenState extends State<VideoScreen> {
               _sortBy = sortType;
               _sortedVideos.clear();
             });
-            // Immediately trigger the correct sort
             if (sortType == 'date' || sortType == 'size') {
               _performAsyncSort(_videoAssets);
             } else {
@@ -2675,18 +2577,10 @@ class _VideoScreenState extends State<VideoScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFFCCD0CF).withOpacity(0.2)
-                        : Colors.white.withOpacity(0.1),
+                    color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    icon,
-                    color: isSelected
-                        ? const Color(0xFFCCD0CF)
-                        : const Color(0xFF9BA8AB),
-                    size: 20,
-                  ),
+                  child: Icon(icon, color: const Color(0xFFCCD0CF), size: 20),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -2743,16 +2637,9 @@ class _VideoScreenState extends State<VideoScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isSelected
-            ? const Color(0xFF4A5C6A).withOpacity(0.4)
-            : Colors.white.withOpacity(0.05),
+        color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isSelected
-              ? const Color(0xFFCCD0CF).withOpacity(0.3)
-              : Colors.white.withOpacity(0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -2763,7 +2650,6 @@ class _VideoScreenState extends State<VideoScreen> {
               _sortAscending = ascending;
               _sortedVideos.clear();
             });
-            // Immediately trigger the correct sort
             if (_sortBy == 'date' || _sortBy == 'size') {
               _performAsyncSort(_videoAssets);
             } else {
@@ -2780,18 +2666,10 @@ class _VideoScreenState extends State<VideoScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFFCCD0CF).withOpacity(0.2)
-                        : Colors.white.withOpacity(0.1),
+                    color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    icon,
-                    color: isSelected
-                        ? const Color(0xFFCCD0CF)
-                        : const Color(0xFF9BA8AB),
-                    size: 20,
-                  ),
+                  child: Icon(icon, color: const Color(0xFFCCD0CF), size: 20),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

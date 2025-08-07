@@ -58,18 +58,26 @@ class _BottomControlsState extends State<BottomControls> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.camera_alt),
+                  icon: Image.asset(
+                    'assets/screenshot.png',
+                    width: 24,
+                    height: 24,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   onPressed: widget.onCaptureScreenshot,
                   color: Theme.of(context).colorScheme.primary,
-                  iconSize: 32,
+                  iconSize: 24,
                 ),
                 IconButton(
-                  icon: Icon(
-                    widget.isMuted ? Icons.volume_off : Icons.volume_up,
+                  icon: Image.asset(
+                    'assets/mute.png',
+                    width: 24,
+                    height: 24,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   onPressed: widget.onMute,
                   color: Theme.of(context).colorScheme.primary,
-                  iconSize: 32,
+                  iconSize: 24,
                 ),
                 IconButton(
                   icon: const Icon(Icons.skip_previous),

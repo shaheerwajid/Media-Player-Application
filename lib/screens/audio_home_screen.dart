@@ -9,6 +9,7 @@ import '../../main.dart';
 import 'dart:ui';
 import '../widgets/skeleton_media_card.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme_data.dart';
 
 class MediaFileCard extends StatefulWidget {
   final IconData icon;
@@ -368,21 +369,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.6,
             ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  Color(0xFF06151C),
-                  Color(0xFF0C1A24),
-                  Color(0xFF172734),
-                  Color(0xFF2F404D),
-                  Color(0xFF64727A),
-                  Color(0xFFCCD1CF),
-                ],
-                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-              ),
-            ),
+            decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(24),
@@ -582,21 +569,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.6,
             ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  Color(0xFF06151C),
-                  Color(0xFF0C1A24),
-                  Color(0xFF172734),
-                  Color(0xFF2F404D),
-                  Color(0xFF64727A),
-                  Color(0xFFCCD1CF),
-                ],
-                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-              ),
-            ),
+            decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(24),
@@ -857,35 +830,40 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
 
   Widget _buildFilterTab(String label, int index) {
     final isSelected = _selectedTabIndex == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedTabIndex = index;
-          // Reset selections when switching tabs
-          if (label == 'Folder') {
-            _selectedFolder = null;
-          } else if (label == 'Playlists') {
-            _selectedPlaylist = null;
-          } else if (label == 'Album') {
-            _selectedAlbum = null;
-          } else if (label == 'Artist') {
-            _selectedArtist = null;
-          }
-        });
-      },
-      child: Container(
-        child: Center(
-          child: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            style: GoogleFonts.poppins(
-              color: isSelected
-                  ? const Color(0xFFCCD0CF)
-                  : const Color(0xFF9BA8AB),
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              fontSize: 10,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () {
+          setState(() {
+            _selectedTabIndex = index;
+            // Reset selections when switching tabs
+            if (label == 'Folder') {
+              _selectedFolder = null;
+            } else if (label == 'Playlists') {
+              _selectedPlaylist = null;
+            } else if (label == 'Album') {
+              _selectedAlbum = null;
+            } else if (label == 'Artist') {
+              _selectedArtist = null;
+            }
+          });
+        },
+        child: Container(
+          width: double.infinity,
+          child: Center(
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              style: GoogleFonts.poppins(
+                color: isSelected
+                    ? const Color(0xFFCCD0CF)
+                    : const Color(0xFF9BA8AB),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 10,
+              ),
+              child: Text(label),
             ),
-            child: Text(label),
           ),
         ),
       ),
@@ -907,7 +885,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          color: overlayColor.withOpacity(0.28),
+          color: Colors.white.withOpacity(0.13),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF06141B).withOpacity(0.18),
@@ -991,7 +969,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          color: overlayColor.withOpacity(0.28),
+          color: Colors.white.withOpacity(0.13),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF06141B).withOpacity(0.18),
@@ -1064,7 +1042,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          color: overlayColor.withOpacity(0.28),
+          color: Colors.white.withOpacity(0.13),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF06141B).withOpacity(0.18),
@@ -1540,7 +1518,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          color: overlayColor.withOpacity(0.28),
+          color: Colors.white.withOpacity(0.13),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF06141B).withOpacity(0.18),
@@ -2030,10 +2008,12 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                   border: InputBorder.none,
                   hintStyle: Theme.of(context).textTheme.bodyMedium,
                   filled: true,
-                  fillColor: const Color(0xFF4A5C6A).withOpacity(0.18),
-                  prefixIcon: const Icon(
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.18),
+                  prefixIcon: Icon(
                     Icons.search_outlined,
-                    color: Color(0xFF4A5C6A),
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               )
@@ -2044,33 +2024,18 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         elevation: 0,
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomLeft,
-              end: Alignment.topRight,
-              colors: [
-                Color(0xFF06151C),
-                Color(0xFF0C1A24),
-                Color(0xFF172734),
-                Color(0xFF2F404D),
-                Color(0xFF64727A),
-                Color(0xFFCCD1CF),
-              ],
-              stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-            ),
-          ),
+          decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         ),
-        foregroundColor: const Color(0xFFCCD0CF),
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
-          fontSize: 26,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.1,
-        ),
+        titleTextStyle: Theme.of(context).textTheme.titleLarge,
         actions: [
           if (_isSearching)
             IconButton(
-              icon: const Icon(Icons.close_outlined, color: Color(0xFF9BA8AB)),
+              icon: Icon(
+                Icons.close_outlined,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
               onPressed: _stopSearch,
             )
           else ...[
@@ -2085,21 +2050,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomLeft,
-            end: Alignment.topRight,
-            colors: [
-              Color(0xFF06151C),
-              Color(0xFF0C1A24),
-              Color(0xFF172734),
-              Color(0xFF2F404D),
-              Color(0xFF64727A),
-              Color(0xFFCCD1CF),
-            ],
-            stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         child: Padding(
           padding: EdgeInsets.only(
             top: kToolbarHeight + MediaQuery.of(context).padding.top,

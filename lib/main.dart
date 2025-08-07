@@ -8,6 +8,7 @@ import 'screens/permission_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/settings_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'theme_data.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
@@ -98,135 +99,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseTextTheme = GoogleFonts.poppinsTextTheme(
-      ThemeData.dark().textTheme,
-    );
-    final colorScheme = const ColorScheme(
-      brightness: Brightness.dark,
-      primary: Color(0xFF4A5C6A), // Accent/Primary
-      onPrimary: Color(0xFFCCD0CF),
-      secondary: Color(0xFF9BA8AB),
-      onSecondary: Color(0xFF06141B),
-      background: Color(0xFF06141B),
-      onBackground: Color(0xFFCCD0CF),
-      surface: Color(0xFF11212D),
-      onSurface: Color(0xFFCCD0CF),
-      surfaceVariant: Color(0xFF253745),
-      onSurfaceVariant: Color(0xFF9BA8AB),
-      error: Colors.red,
-      onError: Colors.white,
-      outline: Color(0xFF253745),
-      inverseSurface: Color(0xFFCCD0CF),
-      onInverseSurface: Color(0xFF06141B),
-      tertiary: Color(0xFF253745),
-      onTertiary: Color(0xFFCCD0CF),
-      shadow: Color(0xFF06141B),
-      surfaceTint: Color(0xFF4A5C6A),
-    );
-    return MaterialApp(
-      title: 'Media Player',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        primaryColor: const Color(0xFF4A5C6A),
-        scaffoldBackgroundColor: const Color(0xFF06141B),
-        cardColor: const Color(0xFF11212D),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF4A5C6A),
-          secondary: Color(0xFF9BA8AB),
-          background: Color(0xFF06141B),
-          surface: Color(0xFF253745),
-          onPrimary: Color(0xFFCCD0CF),
-          onSecondary: Color(0xFFCCD0CF),
-          onBackground: Color(0xFFCCD0CF),
-          onSurface: Color(0xFFCCD0CF),
-        ),
-        textTheme: baseTextTheme.copyWith(
-          displayLarge: GoogleFonts.poppins(
-            color: const Color(0xFFCCD0CF),
-            fontWeight: FontWeight.bold,
-            fontSize: 32,
-            letterSpacing: 1.2,
-          ),
-          titleLarge: GoogleFonts.poppins(
-            color: const Color(0xFFCCD0CF),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            letterSpacing: 1.1,
-          ),
-          titleMedium: GoogleFonts.poppins(
-            color: const Color(0xFF9BA8AB),
-            fontWeight: FontWeight.w500,
-            fontSize: 16,
-            letterSpacing: 0.8,
-          ),
-          bodyLarge: GoogleFonts.poppins(
-            color: const Color(0xFFCCD0CF),
-            fontWeight: FontWeight.w400,
-            fontSize: 16,
-          ),
-          bodyMedium: GoogleFonts.poppins(
-            color: const Color(0xFF9BA8AB),
-            fontWeight: FontWeight.w400,
-            fontSize: 14,
-          ),
-        ),
-        fontFamily: GoogleFonts.poppins().fontFamily,
-        useMaterial3: true,
-        appBarTheme: AppBarTheme(
-          backgroundColor: colorScheme.surface,
-          foregroundColor: colorScheme.onSurface,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: GoogleFonts.poppins(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFFCCD0CF),
-          ),
-          iconTheme: const IconThemeData(color: Color(0xFF4A5C6A)),
-        ),
-        cardTheme: CardThemeData(
-          color: colorScheme.surfaceVariant,
-          elevation: 4,
-          shadowColor: colorScheme.shadow.withOpacity(0.4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-        ),
-        listTileTheme: ListTileThemeData(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          tileColor: colorScheme.surface,
-          iconColor: colorScheme.primary,
-          textColor: colorScheme.onSurface,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: colorScheme.surfaceVariant,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            textStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-            shadowColor: colorScheme.shadow.withOpacity(0.3),
-            elevation: 4,
-          ),
-        ),
-        snackBarTheme: SnackBarThemeData(
-          backgroundColor: colorScheme.inverseSurface,
-          contentTextStyle: GoogleFonts.poppins(
-            color: colorScheme.onInverseSurface,
-          ),
-        ),
-      ),
-      home: const AppWrapper(),
-      navigatorObservers: [routeObserver],
-      routes: {'/settings': (context) => const SettingsScreen()},
+    return ValueListenableBuilder<AppTheme>(
+      valueListenable: AppThemes.currentThemeNotifier,
+      builder: (context, theme, _) {
+        return MaterialApp(
+          title: 'Media Player',
+          theme: theme.themeData,
+          home: const AppWrapper(),
+          navigatorObservers: [routeObserver],
+          routes: {'/settings': (context) => const SettingsScreen()},
+        );
+      },
     );
   }
 }

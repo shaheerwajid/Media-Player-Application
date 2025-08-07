@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme_data.dart';
 
 class VideoTrimScreen extends StatefulWidget {
   final File originalFile;
@@ -138,48 +139,18 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
         centerTitle: true,
         title: Text(
           'Trim Video',
-          style: GoogleFonts.poppins(
-            color: const Color(0xFFCCD0CF),
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomLeft,
-              end: Alignment.topRight,
-              colors: [
-                Color(0xFF06151C),
-                Color(0xFF0C1A24),
-                Color(0xFF172734),
-                Color(0xFF2F404D),
-                Color(0xFF64727A),
-                Color(0xFFCCD1CF),
-              ],
-              stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-            ),
-          ),
+          decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         ),
       ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomLeft,
-            end: Alignment.topRight,
-            colors: [
-              Color(0xFF06151C),
-              Color(0xFF0C1A24),
-              Color(0xFF172734),
-              Color(0xFF2F404D),
-              Color(0xFF64727A),
-              Color(0xFFCCD1CF),
-            ],
-            stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         child: _duration == Duration.zero
             ? const Center(child: CircularProgressIndicator())
             : Column(
@@ -201,26 +172,18 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
                       children: [
                         // Combined controls card
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(28),
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                             child: Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Colors.white.withOpacity(0.18),
-                                    Colors.grey.withOpacity(0.10),
-                                    Colors.white.withOpacity(0.12),
-                                  ],
-                                ),
+                                color: Colors.white.withOpacity(0.13),
+                                borderRadius: BorderRadius.circular(28),
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.18),
                                   width: 1.2,
                                 ),
-                                borderRadius: BorderRadius.circular(20),
                               ),
                               child: Column(
                                 children: [
@@ -267,19 +230,21 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
                                       children: [
                                         Text(
                                           _formatMs(_start),
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w500,
+                                              ),
                                         ),
                                         Text(
                                           _formatMs(_end),
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w500,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -405,11 +370,12 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
                                             const SizedBox(width: 8),
                                             Text(
                                               'Save Trim',
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.white,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyLarge
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                             ),
                                           ],
                                         ),

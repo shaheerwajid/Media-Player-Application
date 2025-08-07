@@ -11,6 +11,7 @@ import '../../main.dart';
 import 'dart:ui';
 import '../widgets/skeleton_media_card.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme_data.dart';
 
 class MediaFileCard extends StatefulWidget {
   final Widget? thumbnail;
@@ -173,7 +174,9 @@ class _MediaFileCardState extends State<MediaFileCard>
                       widget.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -183,7 +186,10 @@ class _MediaFileCardState extends State<MediaFileCard>
                         widget.subtitle!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ],
@@ -204,7 +210,9 @@ class _MediaFileCardState extends State<MediaFileCard>
                     ),
                     child: Text(
                       widget.duration!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -431,49 +439,17 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         elevation: 0,
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomLeft,
-              end: Alignment.topRight,
-              colors: [
-                Color(0xFF06151C),
-                Color(0xFF0C1A24),
-                Color(0xFF172734),
-                Color(0xFF2F404D),
-                Color(0xFF64727A),
-                Color(0xFFCCD1CF),
-              ],
-              stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-            ),
-          ),
+          decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         ),
         foregroundColor: Theme.of(context).colorScheme.onBackground,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
-          fontSize: 26,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.1,
-        ),
+        titleTextStyle: Theme.of(context).textTheme.titleLarge,
       ),
       extendBodyBehindAppBar: true,
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomLeft,
-            end: Alignment.topRight,
-            colors: [
-              Color(0xFF06151C),
-              Color(0xFF0C1A24),
-              Color(0xFF172734),
-              Color(0xFF2F404D),
-              Color(0xFF64727A),
-              Color(0xFFCCD1CF),
-            ],
-            stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         child: Padding(
           padding: EdgeInsets.only(
             top: kToolbarHeight + MediaQuery.of(context).padding.top,
@@ -755,7 +731,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                         child: Center(
                           child: Text(
                             'No videos found.',
-                            style: GoogleFonts.poppins(color: Colors.white),
+                            style: Theme.of(context).textTheme.bodyLarge,
                           ),
                         ),
                       )
@@ -869,13 +845,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                                                   maxLines: 2,
                                                   overflow:
                                                       TextOverflow.ellipsis,
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodyLarge
-                                                      ?.copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                                 ),
                                                 // Optionally add subtitle or other details here
                                               ],

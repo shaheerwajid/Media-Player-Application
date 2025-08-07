@@ -63,15 +63,22 @@ class TopControls extends StatelessWidget {
               tooltip: 'Orientation',
             ),
             IconButton(
-              icon: const Icon(
-                Icons.picture_in_picture_alt,
+              icon: Image.asset(
+                'assets/pip.png',
+                width: 24,
+                height: 24,
                 color: Colors.white,
               ),
               onPressed: onEnablePiP,
               tooltip: 'PiP',
             ),
             IconButton(
-              icon: const Icon(Icons.audiotrack, color: Colors.white),
+              icon: Image.asset(
+                'assets/headphone.png',
+                width: 24,
+                height: 24,
+                color: Colors.white,
+              ),
               onPressed: onSwitchToAudio,
               tooltip: 'Audio Only',
             ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'dart:math' as Math;
 import 'package:google_fonts/google_fonts.dart';
+import '../theme_data.dart';
 
 class AudioScreenStandalone extends StatefulWidget {
   final bool isAudioPlayerReady;
@@ -102,21 +103,7 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomLeft,
-          end: Alignment.topRight,
-          colors: [
-            Color(0xFF06151C),
-            Color(0xFF0C1A24),
-            Color(0xFF172734),
-            Color(0xFF2F404D),
-            Color(0xFF64727A),
-            Color(0xFFCCD1CF),
-          ],
-          stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-        ),
-      ),
+      decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
       child: Center(
         child: widget.isAudioPlayerReady
             ? Column(
@@ -188,8 +175,8 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                       vertical: 28,
                     ),
                     decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.13),
                       borderRadius: BorderRadius.circular(32),
-                      color: Colors.white.withOpacity(0.08),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.18),

@@ -426,9 +426,7 @@ class AnimatedNavBarItem extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: isSelected
-                  ? highlightColor
-                  : Colors.white.withOpacity(0.7),
+              color: Colors.white,
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),

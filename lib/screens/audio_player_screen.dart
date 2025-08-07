@@ -10,6 +10,7 @@ import 'dart:typed_data';
 import 'package:share_plus/share_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:ui';
+import '../theme_data.dart';
 
 class AudioPlayerScreen extends StatefulWidget {
   final List<AssetEntity> audios;
@@ -350,20 +351,9 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.6,
             ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  Color(0xFF06151C),
-                  Color(0xFF0C1A24),
-                  Color(0xFF172734),
-                  Color(0xFF2F404D),
-                  Color(0xFF64727A),
-                  Color(0xFFCCD1CF),
-                ],
-                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-              ),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.13),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
@@ -693,20 +683,9 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.6,
             ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  Color(0xFF06151C),
-                  Color(0xFF0C1A24),
-                  Color(0xFF172734),
-                  Color(0xFF2F404D),
-                  Color(0xFF64727A),
-                  Color(0xFFCCD1CF),
-                ],
-                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-              ),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.13),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
@@ -833,20 +812,9 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.6,
             ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  Color(0xFF06151C),
-                  Color(0xFF0C1A24),
-                  Color(0xFF172734),
-                  Color(0xFF2F404D),
-                  Color(0xFF64727A),
-                  Color(0xFFCCD1CF),
-                ],
-                stops: [0.0, 0.2, 0.43, 0.54, 0.78, 1.0],
-              ),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.13),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
@@ -1101,7 +1069,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
         ],
       ),
       body: Container(
-        color: Colors.black,
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: FutureBuilder<File?>(
           future: currentAudio.file,
           builder: (context, fileSnapshot) {
