@@ -12,18 +12,35 @@ class ThemeSelectionScreen extends StatefulWidget {
 
 class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
   late PageController _pageController;
+  late ScrollController _scrollController;
   int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = AppThemes.availableThemes.indexOf(AppThemes.currentTheme);
-    _pageController = PageController(initialPage: _currentIndex);
+    _pageController = PageController(
+      initialPage: _currentIndex,
+      viewportFraction: 0.7, // Better for showing side previews
+    );
+    _scrollController = ScrollController();
+
+    // Center the selected theme after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _currentIndex * (240.0 + 8), // selected width + margin
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -74,20 +91,33 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   const SizedBox(height: 16), // Reduced from 20
                   // Theme Preview Carousel
                   Expanded(
-                    child: PageView.builder(
-                      controller: _pageController,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentIndex = index;
-                        });
-                      },
-                      itemCount: AppThemes.availableThemes.length,
-                      itemBuilder: (context, index) {
-                        final theme = AppThemes.availableThemes[index];
-                        return _buildThemePreview(theme, index);
-                      },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _buildCarousel(),
                     ),
                   ),
+                  // Page Indicators
+                  Container(
+                    height: 20,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        AppThemes.availableThemes.length,
+                        (index) => Container(
+                          width: index == _currentIndex ? 12 : 8,
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: index == _currentIndex
+                                ? Colors.white
+                                : Colors.white.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   // In Use Section
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -189,10 +219,32 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
     );
   }
 
+  Widget _buildCarousel() {
+    return Container(
+      height: 600,
+      child: PageView.builder(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        itemCount: AppThemes.availableThemes.length,
+        itemBuilder: (context, index) {
+          final theme = AppThemes.availableThemes[index];
+          return _buildThemePreview(theme, index);
+        },
+      ),
+    );
+  }
+
   Widget _buildThemePreview(AppTheme theme, int index) {
     final isSelected = index == _currentIndex;
-    final scale = isSelected ? 1.0 : 0.85;
-    final opacity = isSelected ? 1.0 : 0.6;
+    final scale = isSelected ? 1.0 : 0.85; // Side previews slightly smaller
+    final opacity = isSelected ? 1.0 : 0.8; // Side previews more visible
+    final width = isSelected
+        ? 240.0
+        : 180.0; // Even smaller widths to bring closer
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -206,29 +258,42 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
               setState(() {
                 _currentIndex = index;
               });
-              _pageController.animateToPage(
-                index,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
+              // Scroll to the selected item
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _scrollController.animateTo(
+                  index * (width + 8), // width + margin
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              });
             },
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              width: width,
+              margin: const EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: 10,
+              ), // Even smaller margin
               decoration: BoxDecoration(
                 gradient: theme.mainGradient,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: isSelected
-                      ? Colors.white.withOpacity(0.3)
+                      ? Colors.white.withOpacity(0.5)
                       : Colors.white.withOpacity(0.1),
-                  width: isSelected ? 2 : 1,
+                  width: isSelected ? 3 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+                    blurRadius: isSelected ? 20 : 10,
+                    offset: const Offset(0, 8),
                   ),
+                  if (isSelected)
+                    BoxShadow(
+                      color: theme.primaryColor.withOpacity(0.4),
+                      blurRadius: 25,
+                      offset: const Offset(0, 10),
+                    ),
                 ],
               ),
               child: ClipRRect(
@@ -244,14 +309,16 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
 
   Widget _buildThemePreviewContent(AppTheme theme) {
     return Container(
-      height: 420, // Final optimized height to prevent overflow
+      height: 480, // Reduced height
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Status Bar
           Container(
-            height: 24,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            height: 20, // Reduced height
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+            ), // Reduced padding
             decoration: BoxDecoration(
               color: theme.backgroundColor.withOpacity(0.8),
             ),
@@ -262,13 +329,13 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   '9:40',
                   style: GoogleFonts.poppins(
                     color: theme.textColor,
-                    fontSize: 12,
+                    fontSize: 10, // Reduced font size
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 Container(
-                  width: 6,
-                  height: 6,
+                  width: 4, // Reduced size
+                  height: 4,
                   decoration: BoxDecoration(
                     color: theme.textColor,
                     shape: BoxShape.circle,
@@ -276,9 +343,13 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                 ),
                 Row(
                   children: [
-                    Icon(Icons.wifi, color: theme.textColor, size: 12),
-                    const SizedBox(width: 4),
-                    Icon(Icons.battery_full, color: theme.textColor, size: 12),
+                    Icon(
+                      Icons.wifi,
+                      color: theme.textColor,
+                      size: 10,
+                    ), // Reduced size
+                    const SizedBox(width: 2), // Reduced spacing
+                    Icon(Icons.battery_full, color: theme.textColor, size: 10),
                   ],
                 ),
               ],
@@ -286,7 +357,10 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
           ),
           // Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ), // Reduced padding
             decoration: BoxDecoration(
               color: theme.surfaceColor.withOpacity(0.8),
             ),
@@ -296,18 +370,25 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   'Media Player',
                   style: GoogleFonts.poppins(
                     color: theme.textColor,
-                    fontSize: 16,
+                    fontSize: 13, // Reduced font size
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const Spacer(),
-                Icon(Icons.search, color: theme.textColor, size: 20),
+                Icon(
+                  Icons.search,
+                  color: theme.textColor,
+                  size: 16,
+                ), // Reduced size
               ],
             ),
           ),
           // Video Count
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 6,
+            ), // Reduced padding
             decoration: BoxDecoration(
               color: theme.surfaceColor.withOpacity(0.6),
             ),
@@ -317,7 +398,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   '20 Videos',
                   style: GoogleFonts.poppins(
                     color: theme.mutedTextColor,
-                    fontSize: 14,
+                    fontSize: 11, // Reduced font size
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -327,9 +408,12 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
           // Video List
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6,
+              ), // Reduced padding
               child: ListView.builder(
-                itemCount: 3, // Further reduced to prevent overflow
+                itemCount: 4, // Reduced to show fewer videos
                 itemBuilder: (context, index) {
                   return _buildVideoCard(theme, index);
                 },
@@ -338,8 +422,11 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
           ),
           // Bottom Navigation
           Container(
-            height: 60,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            height: 50, // Reduced height
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 6,
+            ), // Reduced padding
             decoration: BoxDecoration(
               color: theme.surfaceColor.withOpacity(0.8),
               borderRadius: const BorderRadius.only(
@@ -352,7 +439,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
               children: [
                 _buildNavItem(theme, 'assets/video.png', 'Video'),
                 _buildNavItem(theme, 'assets/music.png', 'Music'),
-                _buildNavItem(theme, 'assets/settings.png', 'Settings'),
+                _buildNavItem(theme, 'assets/settings.png', 'Me'),
               ],
             ),
           ),
@@ -366,30 +453,35 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
       'Rural Vietnam Stream',
       'National Women\'s Hockey',
       'Sri Lankan Girl\'s Ambuluwawa Tower Hike',
+      'Beautiful Butterfly on Orange Petals',
     ];
-    final subtitles = ['Today', 'Yesterday', '2 days ago'];
+    final subtitles = ['Today', 'Yesterday', '2 days ago', '3 days ago'];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 6), // Reduced margin
+      padding: const EdgeInsets.all(8), // Reduced padding
       decoration: BoxDecoration(
         color: theme.surfaceColor.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8), // Reduced radius
         border: Border.all(color: theme.borderColor.withOpacity(0.2), width: 1),
       ),
       child: Row(
         children: [
           // Thumbnail
           Container(
-            width: 48,
-            height: 48,
+            width: 36, // Reduced size
+            height: 36,
             decoration: BoxDecoration(
               gradient: theme.cardGradient,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6), // Reduced radius
             ),
-            child: Icon(Icons.movie, color: theme.textColor, size: 24),
+            child: Icon(
+              Icons.movie,
+              color: theme.textColor,
+              size: 18,
+            ), // Reduced size
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8), // Reduced spacing
           // Content
           Expanded(
             child: Column(
@@ -399,18 +491,18 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   titles[index],
                   style: GoogleFonts.poppins(
                     color: theme.textColor,
-                    fontSize: 14,
+                    fontSize: 11, // Reduced font size
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 1), // Reduced spacing
                 Text(
                   subtitles[index],
                   style: GoogleFonts.poppins(
                     color: theme.mutedTextColor,
-                    fontSize: 12,
+                    fontSize: 9, // Reduced font size
                   ),
                 ),
               ],
@@ -419,9 +511,13 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
           // Icons
           Row(
             children: [
-              Icon(Icons.star_border, color: theme.textColor, size: 20),
-              const SizedBox(width: 8),
-              Icon(Icons.more_vert, color: theme.textColor, size: 20),
+              Icon(
+                Icons.star_border,
+                color: theme.textColor,
+                size: 16,
+              ), // Reduced size
+              const SizedBox(width: 6), // Reduced spacing
+              Icon(Icons.more_vert, color: theme.textColor, size: 16),
             ],
           ),
         ],
@@ -435,16 +531,16 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
       children: [
         Image.asset(
           assetPath,
-          width: 24,
-          height: 24,
+          width: 18, // Reduced size
+          height: 18,
           // Removed color parameter to use original colors
         ),
-        const SizedBox(height: 2), // Reduced from 4
+        const SizedBox(height: 1), // Reduced spacing
         Text(
           label,
           style: GoogleFonts.poppins(
             color: theme.textColor,
-            fontSize: 11, // Reduced from 12
+            fontSize: 9, // Reduced font size
             fontWeight: FontWeight.w500,
           ),
         ),
