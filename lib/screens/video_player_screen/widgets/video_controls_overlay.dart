@@ -91,27 +91,44 @@ class VideoControlsOverlay extends StatelessWidget {
         if (aspectModeOverlayText != null)
           StatusOverlays.aspectRatio(context, aspectModeOverlayText!),
 
-        // Lock button
+        // Lock button - only show when locked
         if (isLocked)
           Positioned(
             top: 32,
             right: 16,
-            child: IconButton(
-              icon: const Icon(Icons.lock, color: Colors.white),
-              onPressed: toggleLock,
-              tooltip: 'Unlock',
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.4),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.6),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.lock, color: Colors.white, size: 28),
+                onPressed: toggleLock,
+                tooltip: 'Unlock',
+                padding: const EdgeInsets.all(8),
+              ),
             ),
           ),
 
-        // Controls overlay
+        // Controls overlay - only show when not locked
         if (!isLocked) ...[
           // Top controls
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Opacity(
-              opacity: showControls ? 1.0 : 0.0,
+          if (showControls)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
               child: TopControls(
                 onMoreOptions: onMoreOptions,
                 toggleOrientation: toggleOrientation,
@@ -122,14 +139,12 @@ class VideoControlsOverlay extends StatelessWidget {
                 cycleAspectMode: cycleAspectMode,
               ),
             ),
-          ),
           // Bottom controls
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Opacity(
-              opacity: showControls ? 1.0 : 0.0,
+          if (showControls)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
               child: BottomControls(
                 player: player,
                 isPlayerInitialized: isPlayerInitialized,
@@ -146,7 +161,6 @@ class VideoControlsOverlay extends StatelessWidget {
                 onBookmarkTap: onBookmarkTap,
               ),
             ),
-          ),
         ],
       ],
     );

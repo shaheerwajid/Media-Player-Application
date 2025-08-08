@@ -150,9 +150,11 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   void _addToPlaylist(String playlist) {
     final id = widget.audios[_currentIndex].id;
     final list = _prefs.getStringList('playlist_$playlist') ?? [];
-    if (!list.contains(id)) {
-      list.add(id);
-      _prefs.setStringList('playlist_$playlist', list);
+    // Ensure no duplicates by using a Set
+    final uniqueIds = list.toSet();
+    if (!uniqueIds.contains(id)) {
+      uniqueIds.add(id);
+      _prefs.setStringList('playlist_$playlist', uniqueIds.toList());
 
       // Show animated checkmark feedback
       _showPlaylistCheckmarkFeedback(context);
@@ -181,80 +183,265 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   void _showPlaylistDialog() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (c) {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return SafeArea(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6,
+                ),
+                decoration: BoxDecoration(
+                  gradient: AppThemes.currentMainGradient,
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                        ),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _playlistController,
-                                decoration: const InputDecoration(
-                                  hintText: 'New playlist name',
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    vertical: 8,
-                                    horizontal: 12,
+                            // Handle bar
+                            Container(
+                              margin: const EdgeInsets.only(top: 12, bottom: 8),
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            // Header
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF4A5C6A,
+                                      ).withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.playlist_add_outlined,
+                                      color: Color(0xFFCCD0CF),
+                                      size: 24,
+                                    ),
                                   ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      'Add to Playlist',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFFCCD0CF),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Create new playlist section
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.2),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _playlistController,
+                                        style: GoogleFonts.poppins(
+                                          color: const Color(0xFFCCD0CF),
+                                        ),
+                                        decoration: InputDecoration(
+                                          hintText: 'New playlist name',
+                                          hintStyle: GoogleFonts.poppins(
+                                            color: Colors.white.withOpacity(
+                                              0.7,
+                                            ),
+                                          ),
+                                          border: const OutlineInputBorder(),
+                                          enabledBorder:
+                                              const OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: Color(0xFF253745),
+                                                ),
+                                              ),
+                                          focusedBorder:
+                                              const OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: Color(0xFF4A5C6A),
+                                                ),
+                                              ),
+                                          isDense: true,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                vertical: 12,
+                                                horizontal: 16,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: const Color(
+                                          0xFF4A5C6A,
+                                        ).withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.check,
+                                          color: Color(0xFFCCD0CF),
+                                        ),
+                                        onPressed: () {
+                                          final newPlaylist =
+                                              _playlistController.text.trim();
+                                          if (newPlaylist.isNotEmpty) {
+                                            _createPlaylist(newPlaylist);
+                                            _playlistController.clear();
+                                            setModalState(() {});
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.check),
-                              onPressed: () {
-                                final newPlaylist = _playlistController.text
-                                    .trim();
-                                if (newPlaylist.isNotEmpty) {
-                                  _createPlaylist(newPlaylist);
-                                  _playlistController.clear();
-                                  Navigator.pop(c);
-                                }
-                              },
-                            ),
+                            if (_playlists.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'Existing Playlists:',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFFCCD0CF),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ...(_playlists.map((playlist) {
+                                final inPlaylist =
+                                    (_prefs.getStringList(
+                                              'playlist_$playlist',
+                                            ) ??
+                                            [])
+                                        .contains(
+                                          widget.audios[_currentIndex].id,
+                                        );
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.2),
+                                      ),
+                                    ),
+                                    child: ListTile(
+                                      leading: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(
+                                            0xFF4A5C6A,
+                                          ).withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          inPlaylist
+                                              ? Icons.check_circle
+                                              : Icons.queue_music_outlined,
+                                          color: const Color(0xFFCCD0CF),
+                                          size: 20,
+                                        ),
+                                      ),
+                                      title: Text(
+                                        playlist,
+                                        style: GoogleFonts.poppins(
+                                          color: const Color(0xFFCCD0CF),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        inPlaylist
+                                            ? 'Remove from playlist'
+                                            : 'Add to playlist',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white.withOpacity(0.7),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        if (inPlaylist) {
+                                          _removeFromPlaylist(playlist);
+                                        } else {
+                                          _addToPlaylist(playlist);
+                                        }
+                                        setModalState(() {});
+                                      },
+                                    ),
+                                  ),
+                                );
+                              })),
+                            ],
+                            const SizedBox(height: 16),
                           ],
                         ),
                       ),
-                      for (final playlist in _playlists)
-                        ListTile(
-                          leading: const Icon(Icons.queue_music),
-                          title: Text(playlist),
-                          trailing: IconButton(
-                            icon: Icon(
-                              (_prefs.getStringList('playlist_$playlist') ?? [])
-                                      .contains(widget.audios[_currentIndex].id)
-                                  ? Icons.check_box
-                                  : Icons.check_box_outline_blank,
-                            ),
-                            onPressed: () {
-                              final inPlaylist =
-                                  (_prefs.getStringList('playlist_$playlist') ??
-                                          [])
-                                      .contains(
-                                        widget.audios[_currentIndex].id,
-                                      );
-                              if (inPlaylist) {
-                                _removeFromPlaylist(playlist);
-                              } else {
-                                _addToPlaylist(playlist);
-                              }
-                              setModalState(() {});
-                            },
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
                 ),
               ),

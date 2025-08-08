@@ -65,10 +65,14 @@ class _VideoScreenState extends State<VideoScreen> {
   void _loadFavourites() {
     if (!mounted) return; // Early return if widget is disposed
 
+    // Load both video_favourites and favourites for compatibility
+    final videoFavs = _prefs.getStringList('video_favourites') ?? [];
     final favs = _prefs.getStringList('favourites') ?? [];
+    final allFavs = {...videoFavs, ...favs};
+
     if (mounted) {
       setState(() {
-        _favourites = favs.toSet();
+        _favourites = allFavs.toSet();
       });
     }
   }
@@ -117,9 +121,11 @@ class _VideoScreenState extends State<VideoScreen> {
   List<AssetEntity> _getPlaylistVideos(String playlist) {
     if (playlist == 'Favourite Videos') {
       // For Favourite Videos playlist, use the favorites list
+      final Set<String> seenIds = <String>{};
       final List<AssetEntity> favoriteVideos = [];
       for (final asset in _videoAssets) {
-        if (_favourites.contains(asset.id)) {
+        if (_favourites.contains(asset.id) && !seenIds.contains(asset.id)) {
+          seenIds.add(asset.id);
           favoriteVideos.add(asset);
         }
       }
@@ -133,8 +139,10 @@ class _VideoScreenState extends State<VideoScreen> {
     final uniqueIds = ids.toSet().toList();
     _prefs.setStringList('playlist_$playlist', uniqueIds);
 
+    final Set<String> seenIds = <String>{};
     for (final asset in _videoAssets) {
-      if (uniqueIds.contains(asset.id)) {
+      if (uniqueIds.contains(asset.id) && !seenIds.contains(asset.id)) {
+        seenIds.add(asset.id);
         playlistVideos.add(asset);
       }
     }
@@ -190,17 +198,21 @@ class _VideoScreenState extends State<VideoScreen> {
 
   void _addToPlaylist(AssetEntity video, String playlist) {
     final list = _prefs.getStringList('playlist_$playlist') ?? [];
-    if (!list.contains(video.id)) {
-      list.add(video.id);
-      _prefs.setStringList('playlist_$playlist', list);
+    // Ensure no duplicates by using a Set
+    final uniqueIds = list.toSet();
+    if (!uniqueIds.contains(video.id)) {
+      uniqueIds.add(video.id);
+      _prefs.setStringList('playlist_$playlist', uniqueIds.toList());
     }
   }
 
   void _removeFromPlaylist(AssetEntity video, String playlist) {
     final list = _prefs.getStringList('playlist_$playlist') ?? [];
-    if (list.contains(video.id)) {
-      list.remove(video.id);
-      _prefs.setStringList('playlist_$playlist', list);
+    // Ensure no duplicates by using a Set
+    final uniqueIds = list.toSet();
+    if (uniqueIds.contains(video.id)) {
+      uniqueIds.remove(video.id);
+      _prefs.setStringList('playlist_$playlist', uniqueIds.toList());
     }
   }
 
@@ -209,104 +221,281 @@ class _VideoScreenState extends State<VideoScreen> {
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (c) {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Add to Playlist',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFFCCD0CF),
-                            ),
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.close,
-                              color: Color(0xFF9BA8AB),
-                            ),
-                            onPressed: () => Navigator.pop(c),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: playlistController,
-                        autofocus: true,
-                        decoration: const InputDecoration(
-                          hintText: 'New playlist name',
-                          border: OutlineInputBorder(),
+                decoration: BoxDecoration(
+                  gradient: AppThemes.currentMainGradient,
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
                         ),
-                        onSubmitted: (value) {
-                          if (value.isNotEmpty) {
-                            _createPlaylist(value);
-                            _addToPlaylist(video, value);
-                            playlistController.clear();
-                            Navigator.pop(c);
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (_playlists.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Existing Playlists:',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFFCCD0CF),
-                            ),
-                          ),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      ...(_playlists.map((playlist) {
-                        final inPlaylist =
-                            (_prefs.getStringList('playlist_$playlist') ?? [])
-                                .contains(video.id);
-                        return ListTile(
-                          leading: Icon(
-                            inPlaylist
-                                ? Icons.check_circle
-                                : Icons.queue_music_outlined,
-                            color: inPlaylist
-                                ? Colors.green
-                                : const Color(0xFF9BA8AB),
-                          ),
-                          title: Text(playlist),
-                          onTap: () {
-                            if (inPlaylist) {
-                              _removeFromPlaylist(video, playlist);
-                            } else {
-                              _addToPlaylist(video, playlist);
-                            }
-                            setModalState(() {});
-                          },
-                        );
-                      })),
-                    ],
-                    const SizedBox(height: 16),
-                  ],
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Handle bar
+                            Container(
+                              margin: const EdgeInsets.only(top: 12, bottom: 8),
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            // Header
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF4A5C6A,
+                                      ).withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.playlist_add_outlined,
+                                      color: Color(0xFFCCD0CF),
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      'Add to Playlist',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFFCCD0CF),
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () => Navigator.pop(c),
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Color(0xFFCCD0CF),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Create new playlist section
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.2),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: playlistController,
+                                        style: GoogleFonts.poppins(
+                                          color: const Color(0xFFCCD0CF),
+                                        ),
+                                        decoration: InputDecoration(
+                                          hintText: 'New playlist name',
+                                          hintStyle: GoogleFonts.poppins(
+                                            color: Colors.white.withOpacity(
+                                              0.7,
+                                            ),
+                                          ),
+                                          border: const OutlineInputBorder(),
+                                          enabledBorder:
+                                              const OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: Color(0xFF253745),
+                                                ),
+                                              ),
+                                          focusedBorder:
+                                              const OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: Color(0xFF4A5C6A),
+                                                ),
+                                              ),
+                                          isDense: true,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                vertical: 12,
+                                                horizontal: 16,
+                                              ),
+                                        ),
+                                        onSubmitted: (value) {
+                                          if (value.isNotEmpty) {
+                                            _createPlaylist(value);
+                                            _addToPlaylist(video, value);
+                                            playlistController.clear();
+                                            Navigator.pop(c);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: const Color(
+                                          0xFF4A5C6A,
+                                        ).withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.check,
+                                          color: Color(0xFFCCD0CF),
+                                        ),
+                                        onPressed: () {
+                                          final newPlaylist = playlistController
+                                              .text
+                                              .trim();
+                                          if (newPlaylist.isNotEmpty) {
+                                            _createPlaylist(newPlaylist);
+                                            _addToPlaylist(video, newPlaylist);
+                                            playlistController.clear();
+                                            Navigator.pop(c);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (_playlists.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'Existing Playlists:',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFFCCD0CF),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ...(_playlists.map((playlist) {
+                                final inPlaylist =
+                                    (_prefs.getStringList(
+                                              'playlist_$playlist',
+                                            ) ??
+                                            [])
+                                        .contains(video.id);
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.2),
+                                      ),
+                                    ),
+                                    child: ListTile(
+                                      leading: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(
+                                            0xFF4A5C6A,
+                                          ).withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          inPlaylist
+                                              ? Icons.check_circle
+                                              : Icons.queue_music_outlined,
+                                          color: const Color(0xFFCCD0CF),
+                                          size: 20,
+                                        ),
+                                      ),
+                                      title: Text(
+                                        playlist,
+                                        style: GoogleFonts.poppins(
+                                          color: const Color(0xFFCCD0CF),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        inPlaylist
+                                            ? 'Remove from playlist'
+                                            : 'Add to playlist',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white.withOpacity(0.7),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        if (inPlaylist) {
+                                          _removeFromPlaylist(video, playlist);
+                                        } else {
+                                          _addToPlaylist(video, playlist);
+                                        }
+                                        setModalState(() {});
+                                      },
+                                    ),
+                                  ),
+                                );
+                              })),
+                            ],
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             );
@@ -1308,6 +1497,14 @@ class _VideoScreenState extends State<VideoScreen> {
               builder: (_) => VideoPlayerScreen(
                 videoAssets: fullList,
                 initialIndex: initialIndex,
+                onFavouritesChanged: () {
+                  _loadFavourites();
+                  setState(() {});
+                },
+                onPlaylistsChanged: () {
+                  _loadPlaylists();
+                  setState(() {});
+                },
               ),
             ),
           );
@@ -1420,6 +1617,14 @@ class _VideoScreenState extends State<VideoScreen> {
                   builder: (_) => VideoPlayerScreen(
                     videoAssets: fullList,
                     initialIndex: initialIndex,
+                    onFavouritesChanged: () {
+                      _loadFavourites();
+                      setState(() {});
+                    },
+                    onPlaylistsChanged: () {
+                      _loadPlaylists();
+                      setState(() {});
+                    },
                   ),
                 ),
               );
@@ -2010,6 +2215,14 @@ class _VideoScreenState extends State<VideoScreen> {
               builder: (_) => VideoPlayerScreen(
                 videoAssets: fullList,
                 initialIndex: initialIndex,
+                onFavouritesChanged: () {
+                  _loadFavourites();
+                  setState(() {});
+                },
+                onPlaylistsChanged: () {
+                  _loadPlaylists();
+                  setState(() {});
+                },
               ),
             ),
           );

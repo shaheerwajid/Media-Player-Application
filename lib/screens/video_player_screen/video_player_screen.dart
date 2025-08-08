@@ -44,12 +44,14 @@ class VideoPlayerScreen extends StatefulWidget {
   final List<AssetEntity> videoAssets;
   final int initialIndex;
   final VoidCallback? onFavouritesChanged;
+  final VoidCallback? onPlaylistsChanged;
 
   const VideoPlayerScreen({
     Key? key,
     required this.videoAssets,
     required this.initialIndex,
     this.onFavouritesChanged,
+    this.onPlaylistsChanged,
   }) : super(key: key);
 
   @override
@@ -280,8 +282,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   void _loadFavourites() {
     final favs = _prefs.getStringList('video_favourites') ?? [];
+    // Ensure no duplicates by using a Set
+    final uniqueFavs = favs.toSet();
     setState(() {
-      _favourites = favs.toSet();
+      _favourites = uniqueFavs;
       _isFavourite = _favourites.contains(widget.videoAssets[_currentIndex].id);
     });
   }
@@ -289,14 +293,16 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void _toggleFavourite() {
     final file = widget.videoAssets[_currentIndex].id;
     final favs = _prefs.getStringList('video_favourites') ?? [];
+    // Ensure no duplicates by using a Set
+    final uniqueFavs = favs.toSet();
     if (_isFavourite) {
-      favs.remove(file);
+      uniqueFavs.remove(file);
     } else {
-      favs.add(file);
+      uniqueFavs.add(file);
     }
-    _prefs.setStringList('video_favourites', favs);
+    _prefs.setStringList('video_favourites', uniqueFavs.toList());
     setState(() {
-      _favourites = favs.toSet();
+      _favourites = uniqueFavs;
       _isFavourite = _favourites.contains(file);
       _favouritesChanged = true;
     });
@@ -447,6 +453,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       _hideTimer = Timer(const Duration(seconds: 2), () {
         if (mounted) setState(() => _showControls = false);
       });
+    }
+  }
+
+  void _resetHideTimer() {
+    if (!_isLocked && _showControls) {
+      _startHideTimer();
     }
   }
 
@@ -2319,7 +2331,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         if (_isAudioOnly) {
                           await NativeAudioService.seekTo(ms);
                         } else {
-                          player.seek(Duration(milliseconds: ms));
+                          final clampedMs = ms.clamp(
+                            0,
+                            player.state.duration.inMilliseconds,
+                          );
+                          player.seek(Duration(milliseconds: clampedMs));
                         }
                       },
                       albumArt:
@@ -2485,9 +2501,47 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                     ),
                                   ),
                                 ),
+                              // Lock button - only show when locked
+                              if (_isLocked)
+                                Positioned(
+                                  top: 32,
+                                  right: 16,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.4),
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.6),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: IconButton(
+                                      icon: Image.asset(
+                                        _isLocked
+                                            ? 'assets/lock.png'
+                                            : 'assets/unlock.png',
+                                        color: null,
+                                        width: 28,
+                                        height: 28,
+                                      ),
+                                      onPressed: () {
+                                        _resetHideTimer();
+                                        _toggleLock();
+                                      },
+                                      padding: const EdgeInsets.all(8),
+                                    ),
+                                  ),
+                                ),
 
-                              // Main controls
-                              if (_showControls)
+                              // Main controls - only show when not locked
+                              if (_showControls && !_isLocked)
                                 Column(
                                   children: [
                                     // Top controls
@@ -2533,8 +2587,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                       Icons.arrow_back,
                                                       color: Colors.white,
                                                     ),
-                                                    onPressed: () =>
-                                                        Navigator.pop(context),
+                                                    onPressed: () {
+                                                      _resetHideTimer();
+                                                      Navigator.pop(context);
+                                                    },
                                                   ),
                                                   const SizedBox(width: 12),
                                                   Expanded(
@@ -2567,7 +2623,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                     width: 24,
                                                     height: 24,
                                                   ),
-                                                  onPressed: _toggleLock,
+                                                  onPressed: () {
+                                                    _resetHideTimer();
+                                                    _toggleLock();
+                                                  },
                                                 ),
                                                 if (!_isLocked) ...[
                                                   IconButton(
@@ -2575,10 +2634,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                       Icons.more_vert,
                                                       color: Colors.white,
                                                     ),
-                                                    onPressed: () =>
-                                                        _showVideoMoreOptions(
-                                                          context,
-                                                        ),
+                                                    onPressed: () {
+                                                      _resetHideTimer();
+                                                      _showVideoMoreOptions(
+                                                        context,
+                                                      );
+                                                    },
                                                   ),
                                                 ],
                                               ],
@@ -2667,20 +2728,44 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                                 .state
                                                                 .position
                                                                 .inMilliseconds
-                                                                .toDouble(),
+                                                                .toDouble()
+                                                                .clamp(
+                                                                  0.0,
+                                                                  player
+                                                                      .state
+                                                                      .duration
+                                                                      .inMilliseconds
+                                                                      .toDouble(),
+                                                                ),
                                                             max: player
                                                                 .state
                                                                 .duration
                                                                 .inMilliseconds
                                                                 .toDouble(),
                                                             onChanged: (value) {
+                                                              _resetHideTimer();
+                                                              final clampedValue =
+                                                                  value.clamp(
+                                                                    0.0,
+                                                                    player
+                                                                        .state
+                                                                        .duration
+                                                                        .inMilliseconds
+                                                                        .toDouble(),
+                                                                  );
                                                               player.seek(
                                                                 Duration(
                                                                   milliseconds:
-                                                                      value
+                                                                      clampedValue
                                                                           .toInt(),
                                                                 ),
                                                               );
+                                                            },
+                                                            onChangeStart: (value) {
+                                                              _resetHideTimer();
+                                                            },
+                                                            onChangeEnd: (value) {
+                                                              _resetHideTimer();
                                                             },
                                                             activeColor:
                                                                 Colors.white,
@@ -2735,12 +2820,16 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                             color: Colors.white,
                                                             size: 20,
                                                           ),
-                                                          onPressed: () async =>
-                                                              await pip
-                                                                  .enterPipMode(
-                                                                    aspectRatio:
-                                                                        (16, 9),
+                                                          onPressed: () async {
+                                                            _resetHideTimer();
+                                                            await pip
+                                                                .enterPipMode(
+                                                                  aspectRatio: (
+                                                                    16,
+                                                                    9,
                                                                   ),
+                                                                );
+                                                          },
                                                           padding:
                                                               EdgeInsets.zero,
                                                         ),
@@ -2782,7 +2871,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                                 ),
                                                                 onPressed:
                                                                     canPlayPrevious
-                                                                    ? _playPrevious
+                                                                    ? () {
+                                                                        _resetHideTimer();
+                                                                        _playPrevious();
+                                                                      }
                                                                     : null,
                                                               ),
                                                               IconButton(
@@ -2793,15 +2885,32 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                                       .white,
                                                                   size: 20,
                                                                 ),
-                                                                onPressed: () => player.seek(
-                                                                  player
+                                                                onPressed: () {
+                                                                  _resetHideTimer();
+                                                                  final newPosition =
+                                                                      player
                                                                           .state
                                                                           .position -
                                                                       const Duration(
                                                                         seconds:
                                                                             10,
-                                                                      ),
-                                                                ),
+                                                                      );
+                                                                  final clampedPosition =
+                                                                      newPosition <
+                                                                          Duration
+                                                                              .zero
+                                                                      ? Duration
+                                                                            .zero
+                                                                      : newPosition >
+                                                                            player.state.duration
+                                                                      ? player
+                                                                            .state
+                                                                            .duration
+                                                                      : newPosition;
+                                                                  player.seek(
+                                                                    clampedPosition,
+                                                                  );
+                                                                },
                                                               ),
                                                               ClipRRect(
                                                                 borderRadius:
@@ -2860,6 +2969,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                                             32,
                                                                       ),
                                                                       onPressed: () {
+                                                                        _resetHideTimer();
                                                                         if (player
                                                                             .state
                                                                             .playing) {
@@ -2882,15 +2992,32 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                                       .white,
                                                                   size: 20,
                                                                 ),
-                                                                onPressed: () => player.seek(
-                                                                  player
+                                                                onPressed: () {
+                                                                  _resetHideTimer();
+                                                                  final newPosition =
+                                                                      player
                                                                           .state
                                                                           .position +
                                                                       const Duration(
                                                                         seconds:
                                                                             10,
-                                                                      ),
-                                                                ),
+                                                                      );
+                                                                  final clampedPosition =
+                                                                      newPosition <
+                                                                          Duration
+                                                                              .zero
+                                                                      ? Duration
+                                                                            .zero
+                                                                      : newPosition >
+                                                                            player.state.duration
+                                                                      ? player
+                                                                            .state
+                                                                            .duration
+                                                                      : newPosition;
+                                                                  player.seek(
+                                                                    clampedPosition,
+                                                                  );
+                                                                },
                                                               ),
                                                               IconButton(
                                                                 icon: const Icon(
@@ -2902,7 +3029,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                                 ),
                                                                 onPressed:
                                                                     canPlayNext
-                                                                    ? _playNext
+                                                                    ? () {
+                                                                        _resetHideTimer();
+                                                                        _playNext();
+                                                                      }
                                                                     : null,
                                                               ),
                                                             ],
@@ -2931,8 +3061,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                             height: 20,
                                                             color: Colors.white,
                                                           ),
-                                                          onPressed:
-                                                              _switchToAudio,
+                                                          onPressed: () {
+                                                            _resetHideTimer();
+                                                            _switchToAudio();
+                                                          },
                                                           padding:
                                                               EdgeInsets.zero,
                                                         ),
@@ -2959,8 +3091,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                           height: 24,
                                                           color: Colors.white,
                                                         ),
-                                                        onPressed: () =>
-                                                            _setMute(!_isMuted),
+                                                        onPressed: () {
+                                                          _resetHideTimer();
+                                                          _setMute(!_isMuted);
+                                                        },
                                                       ),
                                                       IconButton(
                                                         icon: Image.asset(
@@ -2969,8 +3103,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                           height: 24,
                                                           color: Colors.white,
                                                         ),
-                                                        onPressed:
-                                                            _captureAndSaveScreenshot,
+                                                        onPressed: () {
+                                                          _resetHideTimer();
+                                                          _captureAndSaveScreenshot();
+                                                        },
                                                       ),
                                                       IconButton(
                                                         icon: Image.asset(
@@ -2978,8 +3114,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                           width: 24,
                                                           height: 24,
                                                         ),
-                                                        onPressed:
-                                                            _cycleAspectMode,
+                                                        onPressed: () {
+                                                          _resetHideTimer();
+                                                          _cycleAspectMode();
+                                                        },
                                                       ),
                                                       IconButton(
                                                         icon: Image.asset(
@@ -2988,8 +3126,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                           height: 24,
                                                           color: Colors.white,
                                                         ),
-                                                        onPressed:
-                                                            _toggleOrientation,
+                                                        onPressed: () {
+                                                          _resetHideTimer();
+                                                          _toggleOrientation();
+                                                        },
                                                       ),
                                                     ],
                                                   ),
@@ -3232,66 +3372,189 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF11212D),
-          title: Text(
-            'Create New Playlist',
-            style: GoogleFonts.poppins(
-              color: const Color(0xFFCCD0CF),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.85,
+              maxHeight: MediaQuery.of(context).size.height * 0.4,
             ),
-          ),
-          content: TextField(
-            controller: playlistController,
-            autofocus: true,
-            style: GoogleFonts.poppins(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Enter playlist name',
-              hintStyle: GoogleFonts.poppins(
-                color: Colors.white.withOpacity(0.7),
-              ),
-              border: const OutlineInputBorder(),
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFF253745)),
-              ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFF4A5C6A)),
-              ),
+            decoration: BoxDecoration(
+              gradient: AppThemes.currentMainGradient,
+              borderRadius: BorderRadius.circular(24),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.7),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4A5C6A).withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.playlist_add_outlined,
+                                color: Color(0xFFCCD0CF),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                'Create New Playlist',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFCCD0CF),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Color(0xFFCCD0CF),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        // Input field
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          child: TextField(
+                            controller: playlistController,
+                            autofocus: true,
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFFCCD0CF),
+                              fontSize: 16,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Enter playlist name',
+                              hintStyle: GoogleFonts.poppins(
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 0,
+                              ),
+                            ),
+                            onSubmitted: (value) async {
+                              final playlistName = value.trim();
+                              if (playlistName.isNotEmpty) {
+                                await _createPlaylist(playlistName);
+                                await _addToPlaylist(
+                                  widget.videoAssets[_currentIndex],
+                                  playlistName,
+                                );
+                                Navigator.of(context).pop();
+                              }
+                            },
+                            textInputAction: TextInputAction.done,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Action buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.2),
+                                  ),
+                                ),
+                                child: TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: Text(
+                                    'Cancel',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white.withOpacity(0.7),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      const Color(0xFF4A5C6A).withOpacity(0.8),
+                                      const Color(0xFF253745).withOpacity(0.8),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.2),
+                                  ),
+                                ),
+                                child: TextButton(
+                                  onPressed: () async {
+                                    final playlistName = playlistController.text
+                                        .trim();
+                                    if (playlistName.isNotEmpty) {
+                                      await _createPlaylist(playlistName);
+                                      await _addToPlaylist(
+                                        widget.videoAssets[_currentIndex],
+                                        playlistName,
+                                      );
+                                      Navigator.of(context).pop();
+                                    }
+                                  },
+                                  child: Text(
+                                    'Create',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
-            TextButton(
-              onPressed: () async {
-                final playlistName = playlistController.text.trim();
-                if (playlistName.isNotEmpty) {
-                  await _createPlaylist(playlistName);
-                  await _addToPlaylist(
-                    widget.videoAssets[_currentIndex],
-                    playlistName,
-                  );
-                  Navigator.of(context).pop();
-                }
-              },
-              child: Text(
-                'Create',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -3304,23 +3567,38 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       playlists.add(name);
       await prefs.setStringList('video_playlists', playlists);
       await prefs.setStringList('playlist_$name', []);
+
+      // Notify parent screen immediately
+      widget.onPlaylistsChanged?.call();
     }
   }
 
   Future<void> _addToPlaylist(AssetEntity video, String playlist) async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList('playlist_$playlist') ?? [];
-    if (!list.contains(video.id)) {
-      list.add(video.id);
-      await prefs.setStringList('playlist_$playlist', list);
+    // Ensure no duplicates by using a Set
+    final uniqueIds = list.toSet();
+    if (!uniqueIds.contains(video.id)) {
+      uniqueIds.add(video.id);
+      await prefs.setStringList('playlist_$playlist', uniqueIds.toList());
+
+      // Notify parent screen immediately
+      widget.onPlaylistsChanged?.call();
     }
   }
 
   Future<void> _removeFromPlaylist(AssetEntity video, String playlist) async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList('playlist_$playlist') ?? [];
-    list.remove(video.id);
-    await prefs.setStringList('playlist_$playlist', list);
+    // Ensure no duplicates by using a Set
+    final uniqueIds = list.toSet();
+    if (uniqueIds.contains(video.id)) {
+      uniqueIds.remove(video.id);
+      await prefs.setStringList('playlist_$playlist', uniqueIds.toList());
+    }
+
+    // Notify parent screen immediately
+    widget.onPlaylistsChanged?.call();
   }
 }
 

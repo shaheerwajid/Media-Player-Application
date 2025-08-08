@@ -50,7 +50,24 @@ class _BottomControlsState extends State<BottomControls> {
       bottom: 0,
       child: Container(
         padding: const EdgeInsets.only(bottom: 16.0),
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.7),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [
+              Colors.black.withOpacity(0.9),
+              Colors.black.withOpacity(0.8),
+              Colors.black.withOpacity(0.7),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 15,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -58,44 +75,122 @@ class _BottomControlsState extends State<BottomControls> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 IconButton(
-                  icon: Image.asset(
-                    'assets/screenshot.png',
-                    width: 24,
-                    height: 24,
-                    color: Theme.of(context).colorScheme.primary,
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      'assets/screenshot.png',
+                      width: 20,
+                      height: 20,
+                      color: Colors.white,
+                    ),
                   ),
                   onPressed: widget.onCaptureScreenshot,
-                  color: Theme.of(context).colorScheme.primary,
-                  iconSize: 24,
                 ),
                 IconButton(
-                  icon: Image.asset(
-                    'assets/mute.png',
-                    width: 24,
-                    height: 24,
-                    color: Theme.of(context).colorScheme.primary,
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      'assets/mute.png',
+                      width: 20,
+                      height: 20,
+                      color: Colors.white,
+                    ),
                   ),
                   onPressed: widget.onMute,
-                  color: Theme.of(context).colorScheme.primary,
-                  iconSize: 24,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.skip_previous),
-                  onPressed: widget.onPlayPrevious,
-                  color: widget.canPlayPrevious
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.3),
-                  iconSize: 36,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.replay_10),
-                  onPressed: () => widget.player.seek(
-                    widget.player.state.position - const Duration(seconds: 10),
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.skip_previous,
+                      color: widget.canPlayPrevious
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
+                      size: 28,
+                    ),
                   ),
-                  color: Theme.of(context).colorScheme.primary,
-                  iconSize: 36,
+                  onPressed: widget.onPlayPrevious,
+                ),
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.replay_10,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                  onPressed: () {
+                    final newPosition =
+                        widget.player.state.position -
+                        const Duration(seconds: 10);
+                    final clampedPosition = newPosition < Duration.zero
+                        ? Duration.zero
+                        : newPosition > widget.player.state.duration
+                        ? widget.player.state.duration
+                        : newPosition;
+                    widget.player.seek(clampedPosition);
+                  },
                 ),
                 StreamBuilder<bool>(
                   stream: widget.player.stream.playing,
@@ -108,35 +203,99 @@ class _BottomControlsState extends State<BottomControls> {
                           FadeTransition(opacity: animation, child: child),
                       child: IconButton(
                         key: ValueKey(isPlaying ? 'pause' : 'play'),
-                        icon: Icon(
-                          isPlaying
-                              ? Icons.pause_circle_filled
-                              : Icons.play_circle_filled,
+                        icon: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isPlaying
+                                ? Icons.pause_circle_filled
+                                : Icons.play_circle_filled,
+                            color: Colors.white,
+                            size: 40,
+                          ),
                         ),
                         onPressed: widget.player.playOrPause,
-                        color: Theme.of(context).colorScheme.primary,
-                        iconSize: 48,
                       ),
                     );
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.forward_10),
-                  onPressed: () => widget.player.seek(
-                    widget.player.state.position + const Duration(seconds: 10),
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.forward_10,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
-                  color: Theme.of(context).colorScheme.primary,
-                  iconSize: 36,
+                  onPressed: () {
+                    final newPosition =
+                        widget.player.state.position +
+                        const Duration(seconds: 10);
+                    final clampedPosition = newPosition < Duration.zero
+                        ? Duration.zero
+                        : newPosition > widget.player.state.duration
+                        ? widget.player.state.duration
+                        : newPosition;
+                    widget.player.seek(clampedPosition);
+                  },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.skip_next),
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.skip_next,
+                      color: widget.canPlayNext
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
+                      size: 28,
+                    ),
+                  ),
                   onPressed: widget.onPlayNext,
-                  color: widget.canPlayNext
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.3),
-                  iconSize: 36,
                 ),
               ],
             ),
@@ -160,9 +319,34 @@ class _BottomControlsState extends State<BottomControls> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Text(
-                widget.formatDuration(position),
-                style: GoogleFonts.poppins(color: Colors.white),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  widget.formatDuration(position),
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
             ),
             Expanded(
@@ -171,10 +355,14 @@ class _BottomControlsState extends State<BottomControls> {
                 children: [
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      trackHeight: 2.0,
+                      trackHeight: 3.0,
+                      activeTrackColor: Colors.white,
+                      inactiveTrackColor: Colors.white.withOpacity(0.3),
                       thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 6.0,
+                        enabledThumbRadius: 8.0,
                       ),
+                      thumbColor: Colors.white,
+                      overlayColor: Colors.white.withOpacity(0.2),
                     ),
                     child: Slider(
                       value: position.inMilliseconds.toDouble().clamp(
@@ -242,9 +430,34 @@ class _BottomControlsState extends State<BottomControls> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Text(
-                widget.formatDuration(duration),
-                style: GoogleFonts.poppins(color: Colors.white),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  widget.formatDuration(duration),
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
             ),
           ],
