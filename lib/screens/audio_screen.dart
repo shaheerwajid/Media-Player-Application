@@ -464,10 +464,7 @@ class _AudioScreenState extends State<AudioScreen>
                           children: [
                             Text(
                               '${[60, 230, 910, 3600, 14000][i % 5]}Hz',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: 12,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
                             RotatedBox(
                               quarterTurns: -1,
@@ -498,9 +495,7 @@ class _AudioScreenState extends State<AudioScreen>
                     onPressed: () => Navigator.pop(context),
                     child: Text(
                       'Close',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
                 ],

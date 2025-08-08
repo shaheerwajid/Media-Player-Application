@@ -5,6 +5,7 @@ import 'dart:ui'; // Added for ImageFilter
 import 'package:google_fonts/google_fonts.dart';
 import '../theme_data.dart';
 import '../widgets/unified_card.dart';
+import 'theme_selection_screen.dart'; // Added import for ThemeSelectionScreen
 
 // Move _SettingsTile and _SettingsTileState to the top level, outside of SettingsScreen
 
@@ -791,7 +792,15 @@ class SettingsScreen extends StatelessWidget {
     } else if (Platform.isIOS) {
       // iOS does not allow programmatic exit
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Use the home button to exit the app.')),
+        SnackBar(
+          content: Text(
+            'Use the home button to exit the app.',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       );
     }
   }
@@ -808,7 +817,7 @@ class SettingsScreen extends StatelessWidget {
           decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         ),
         foregroundColor: Theme.of(context).colorScheme.onSurface,
-        centerTitle: true,
+        centerTitle: false,
       ),
       extendBodyBehindAppBar: true,
       body: Container(
@@ -871,62 +880,11 @@ class SettingsScreen extends StatelessWidget {
                 leading: Image.asset('assets/theme.png', width: 28, height: 28),
                 title: 'Themes',
                 onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      final currentTheme = AppThemes.currentThemeNotifier.value;
-                      return AlertDialog(
-                        title: Text(
-                          'Theme Selection',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (final theme in AppThemes.availableThemes)
-                              ListTile(
-                                leading: Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    gradient: theme.mainGradient,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: currentTheme == theme
-                                          ? theme.secondaryColor
-                                          : Colors.transparent,
-                                      width: 2,
-                                    ),
-                                  ),
-                                ),
-                                title: Text(
-                                  theme.name,
-                                  style: Theme.of(context).textTheme.bodyLarge,
-                                ),
-                                trailing: currentTheme == theme
-                                    ? Icon(
-                                        Icons.check,
-                                        color: theme.secondaryColor,
-                                      )
-                                    : null,
-                                onTap: () {
-                                  AppThemes.currentThemeNotifier.value = theme;
-                                  Navigator.pop(context);
-                                },
-                              ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(
-                              'Cancel',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ThemeSelectionScreen(),
+                    ),
                   );
                 },
                 trailing: Icon(

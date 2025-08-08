@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppTheme {
   final String name;
@@ -74,7 +75,7 @@ class AppThemes {
           letterSpacing: 1.1,
         ),
         titleMedium: TextStyle(
-          color: Color(0xFF9BA8AB),
+          color: Colors.white,
           fontWeight: FontWeight.w500,
           fontSize: 16,
           letterSpacing: 0.8,
@@ -85,7 +86,7 @@ class AppThemes {
           fontSize: 16,
         ),
         bodyMedium: TextStyle(
-          color: Color(0xFF9BA8AB),
+          color: Colors.white,
           fontWeight: FontWeight.w400,
           fontSize: 14,
         ),
@@ -225,9 +226,9 @@ class AppThemes {
     ),
   );
 
-  // Reddish Theme
-  static AppTheme reddishTheme = AppTheme(
-    name: 'Reddish',
+  // Red Mist Theme (renamed from Reddish)
+  static AppTheme redMistTheme = AppTheme(
+    name: 'Red Mist',
     themeData: ThemeData(
       brightness: Brightness.dark,
       primaryColor: Color(0xFFB71C1C),
@@ -245,30 +246,30 @@ class AppThemes {
       ),
       textTheme: TextTheme(
         displayLarge: TextStyle(
-          color: Color(0xFFFFCDD2),
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 32,
           letterSpacing: 1.2,
         ),
         titleLarge: TextStyle(
-          color: Color(0xFFFFCDD2),
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 24,
           letterSpacing: 1.1,
         ),
         titleMedium: TextStyle(
-          color: Color(0xFFD84315),
+          color: Colors.white,
           fontWeight: FontWeight.w500,
           fontSize: 16,
           letterSpacing: 0.8,
         ),
         bodyLarge: TextStyle(
-          color: Color(0xFFFFCDD2),
+          color: Colors.white,
           fontWeight: FontWeight.w400,
           fontSize: 16,
         ),
         bodyMedium: TextStyle(
-          color: Color(0xFFD84315),
+          color: Colors.white,
           fontWeight: FontWeight.w400,
           fontSize: 14,
         ),
@@ -277,13 +278,13 @@ class AppThemes {
       useMaterial3: true,
       appBarTheme: AppBarTheme(
         backgroundColor: Color(0xFF2D1313),
-        foregroundColor: Color(0xFFFFCDD2),
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.bold,
-          color: Color(0xFFFFCDD2),
+          color: Colors.white,
         ),
         iconTheme: IconThemeData(color: Color(0xFFD84315)),
       ),
@@ -297,7 +298,7 @@ class AppThemes {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         tileColor: Color(0xFF3C1A1A),
         iconColor: Color(0xFFD84315),
-        textColor: Color(0xFFFFCDD2),
+        textColor: Colors.white,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -318,7 +319,7 @@ class AppThemes {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: Color(0xFF3C1A1A),
-        contentTextStyle: TextStyle(color: Color(0xFFFFCDD2)),
+        contentTextStyle: TextStyle(color: Colors.white),
       ),
     ),
     mainGradient: LinearGradient(
@@ -346,7 +347,7 @@ class AppThemes {
     accentColor: Color(0xFFFFCDD2),
     surfaceColor: Color(0xFF3C1A1A),
     backgroundColor: Color(0xFF2D1313),
-    textColor: Color(0xFFFFCDD2),
+    textColor: Colors.white,
     mutedTextColor: Color(0xFFD84315),
     borderColor: Color(0xFFB71C1C),
     shadowColor: Color(0xFFB71C1C),
@@ -388,175 +389,6 @@ class AppThemes {
     ),
   );
 
-  // --- Red Mist Theme ---
-  static final AppTheme redMistTheme = AppTheme(
-    name: 'Red Mist',
-    themeData: ThemeData(
-      brightness: Brightness.dark,
-      primaryColor: Color(0xFFDF643F),
-      scaffoldBackgroundColor: Color(0xFF3D1F1D),
-      cardColor: Color(0xFFA73728),
-      colorScheme: ColorScheme.dark(
-        primary: Color(0xFFDF643F),
-        secondary: Color(0xFFA73728),
-        background: Color(0xFF3D1F1D),
-        surface: Color(0xFFA73728),
-        onPrimary: Color(0xFFFFE5DE),
-        onSecondary: Color(0xFFFFE5DE),
-        onBackground: Color(0xFFFFE5DE),
-        onSurface: Color(0xFFFFE5DE),
-      ),
-      textTheme: TextTheme(
-        displayLarge: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 32,
-          letterSpacing: 1.2,
-        ),
-        titleLarge: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 24,
-          letterSpacing: 1.1,
-        ),
-        titleMedium: TextStyle(
-          color: Color(0xFFDF643F),
-          fontWeight: FontWeight.w500,
-          fontSize: 16,
-          letterSpacing: 0.8,
-        ),
-        bodyLarge: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w400,
-          fontSize: 16,
-        ),
-        bodyMedium: TextStyle(
-          color: Color(0xFFDF643F),
-          fontWeight: FontWeight.w400,
-          fontSize: 14,
-        ),
-      ),
-      fontFamily: 'Poppins',
-      useMaterial3: true,
-      appBarTheme: AppBarTheme(
-        backgroundColor: Color(0xFF3D1F1D),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        titleTextStyle: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        iconTheme: IconThemeData(color: Color(0xFFDF643F)),
-      ),
-      cardTheme: CardThemeData(
-        color: Color(0xFFA73728),
-        elevation: 4,
-        shadowColor: Color(0xFFDF643F),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      ),
-      listTileTheme: ListTileThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        tileColor: Color(0xFFA73728),
-        iconColor: Color(0xFFDF643F),
-        textColor: Colors.white,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Color(0xFFA73728),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFFDF643F),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: TextStyle(fontWeight: FontWeight.bold),
-          shadowColor: Color(0xFFDF643F),
-          elevation: 4,
-        ),
-      ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: Color(0xFFA73728),
-        contentTextStyle: TextStyle(color: Colors.white),
-      ),
-    ),
-    mainGradient: LinearGradient(
-      begin: Alignment.bottomLeft,
-      end: Alignment.topRight,
-      colors: [Color(0xFF3D1F1D), Color(0xFFA73728), Color(0xFFDF643F)],
-      stops: [0.0, 0.5, 1.0],
-    ),
-    cardGradient: LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [Color(0xFFA73728), Color(0xFF3D1F1D)],
-    ),
-    glassmorphicGradient: LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        Colors.white.withOpacity(0.18),
-        Colors.red.withOpacity(0.10),
-        Colors.white.withOpacity(0.12),
-      ],
-    ),
-    primaryColor: Color(0xFFDF643F),
-    secondaryColor: Color(0xFFA73728),
-    accentColor: Color(0xFFDF643F),
-    surfaceColor: Color(0xFFA73728),
-    backgroundColor: Color(0xFF3D1F1D),
-    textColor: Colors.white,
-    mutedTextColor: Color(0xFFA73728),
-    borderColor: Color(0xFFDF643F),
-    shadowColor: Color(0xFFDF643F),
-    dialogDecoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.bottomLeft,
-        end: Alignment.topRight,
-        colors: [Color(0xFF3D1F1D), Color(0xFFA73728), Color(0xFFDF643F)],
-        stops: [0.0, 0.5, 1.0],
-      ),
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(24),
-        topRight: Radius.circular(24),
-      ),
-      border: Border.all(color: Colors.white24, width: 1),
-    ),
-    cardDecoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFFA73728), Color(0xFF3D1F1D)],
-      ),
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: Color(0xFFDF643F).withOpacity(0.3), width: 1),
-      boxShadow: [
-        BoxShadow(
-          color: Color(0xFFDF643F).withOpacity(0.4),
-          blurRadius: 10,
-          offset: Offset(0, 4),
-        ),
-      ],
-    ),
-    glassmorphicDecoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.white.withOpacity(0.18),
-          Colors.red.withOpacity(0.10),
-          Colors.white.withOpacity(0.12),
-        ],
-      ),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withOpacity(0.18), width: 1.2),
-    ),
-  );
-
   // --- Blue Violet Theme ---
   static final AppTheme blueVioletTheme = AppTheme(
     name: 'Blue Violet',
@@ -589,7 +421,7 @@ class AppThemes {
           letterSpacing: 1.1,
         ),
         titleMedium: TextStyle(
-          color: Color(0xFF959BB5),
+          color: Colors.white,
           fontWeight: FontWeight.w500,
           fontSize: 16,
           letterSpacing: 0.8,
@@ -600,7 +432,7 @@ class AppThemes {
           fontSize: 16,
         ),
         bodyMedium: TextStyle(
-          color: Color(0xFF959BB5),
+          color: Colors.white,
           fontWeight: FontWeight.w400,
           fontSize: 14,
         ),
@@ -756,30 +588,30 @@ class AppThemes {
       ),
       textTheme: TextTheme(
         displayLarge: TextStyle(
-          color: Color(0xFFFADCD5),
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 32,
           letterSpacing: 1.2,
         ),
         titleLarge: TextStyle(
-          color: Color(0xFFFADCD5),
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 24,
           letterSpacing: 1.1,
         ),
         titleMedium: TextStyle(
-          color: Color(0xFF765D67),
+          color: Colors.white,
           fontWeight: FontWeight.w500,
           fontSize: 16,
           letterSpacing: 0.8,
         ),
         bodyLarge: TextStyle(
-          color: Color(0xFFFADCD5),
+          color: Colors.white,
           fontWeight: FontWeight.w400,
           fontSize: 16,
         ),
         bodyMedium: TextStyle(
-          color: Color(0xFF765D67),
+          color: Colors.white,
           fontWeight: FontWeight.w400,
           fontSize: 14,
         ),
@@ -788,13 +620,13 @@ class AppThemes {
       useMaterial3: true,
       appBarTheme: AppBarTheme(
         backgroundColor: Color(0xFF1B0C1A),
-        foregroundColor: Color(0xFFFADCD5),
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.bold,
-          color: Color(0xFFFADCD5),
+          color: Colors.white,
         ),
         iconTheme: IconThemeData(color: Color(0xFF6D3C52)),
       ),
@@ -808,7 +640,7 @@ class AppThemes {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         tileColor: Color(0xFF2D222F),
         iconColor: Color(0xFF6D3C52),
-        textColor: Color(0xFFFADCD5),
+        textColor: Colors.white,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -829,7 +661,7 @@ class AppThemes {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: Color(0xFF2D222F),
-        contentTextStyle: TextStyle(color: Color(0xFFFADCD5)),
+        contentTextStyle: TextStyle(color: Colors.white),
       ),
     ),
     mainGradient: LinearGradient(
@@ -864,7 +696,7 @@ class AppThemes {
     accentColor: Color(0xFF765D67),
     surfaceColor: Color(0xFF2D222F),
     backgroundColor: Color(0xFF1B0C1A),
-    textColor: Color(0xFFFADCD5),
+    textColor: Colors.white,
     mutedTextColor: Color(0xFF765D67),
     borderColor: Color(0xFF6D3C52),
     shadowColor: Color(0xFF6D3C52),
@@ -922,192 +754,6 @@ class AppThemes {
     ),
   );
 
-  // Winter Night Theme
-  static final AppTheme winterNightTheme = AppTheme(
-    name: 'Winter Night',
-    themeData: ThemeData(
-      brightness: Brightness.dark,
-      primaryColor: Color(0xFF2E3061),
-      scaffoldBackgroundColor: Color(0xFF28293D),
-      cardColor: Color(0xFF555184),
-      colorScheme: ColorScheme.dark(
-        primary: Color(0xFF2E3061),
-        secondary: Color(0xFF555184),
-        background: Color(0xFF28293D),
-        surface: Color(0xFF9997BC),
-        onPrimary: Color(0xFFFEE9CE),
-        onSecondary: Color(0xFFFEE9CE),
-        onBackground: Color(0xFFFEE9CE),
-        onSurface: Color(0xFFFEE9CE),
-      ),
-      textTheme: TextTheme(
-        displayLarge: TextStyle(
-          color: Color(0xFFFEE9CE),
-          fontWeight: FontWeight.bold,
-          fontSize: 32,
-          letterSpacing: 1.2,
-        ),
-        titleLarge: TextStyle(
-          color: Color(0xFFFEE9CE),
-          fontWeight: FontWeight.bold,
-          fontSize: 24,
-          letterSpacing: 1.1,
-        ),
-        titleMedium: TextStyle(
-          color: Color(0xFFB2A6BE),
-          fontWeight: FontWeight.w500,
-          fontSize: 16,
-          letterSpacing: 0.8,
-        ),
-        bodyLarge: TextStyle(
-          color: Color(0xFFFEE9CE),
-          fontWeight: FontWeight.w400,
-          fontSize: 16,
-        ),
-        bodyMedium: TextStyle(
-          color: Color(0xFFB2A6BE),
-          fontWeight: FontWeight.w400,
-          fontSize: 14,
-        ),
-      ),
-      fontFamily: 'Poppins',
-      useMaterial3: true,
-      appBarTheme: AppBarTheme(
-        backgroundColor: Color(0xFF28293D),
-        foregroundColor: Color(0xFFFEE9CE),
-        elevation: 0,
-        centerTitle: true,
-        titleTextStyle: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFFFEE9CE),
-        ),
-        iconTheme: IconThemeData(color: Color(0xFF2E3061)),
-      ),
-      cardTheme: CardThemeData(
-        color: Color(0xFF555184),
-        elevation: 4,
-        shadowColor: Color(0xFF2E3061),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      ),
-      listTileTheme: ListTileThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        tileColor: Color(0xFF555184),
-        iconColor: Color(0xFF2E3061),
-        textColor: Color(0xFFFEE9CE),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Color(0xFF555184),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFF2E3061),
-          foregroundColor: Color(0xFFFEE9CE),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: TextStyle(fontWeight: FontWeight.bold),
-          shadowColor: Color(0xFF2E3061),
-          elevation: 4,
-        ),
-      ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: Color(0xFF555184),
-        contentTextStyle: TextStyle(color: Color(0xFFFEE9CE)),
-      ),
-    ),
-    mainGradient: LinearGradient(
-      begin: Alignment.bottomLeft,
-      end: Alignment.topRight,
-      colors: [
-        Color(0xFF2E3061),
-        Color(0xFF28293D),
-        Color(0xFF555184),
-        Color(0xFF9997BC),
-        Color(0xFFB2A6BE),
-        Color(0xFFFEE9CE),
-      ],
-      stops: [0.0, 0.15, 0.35, 0.55, 0.75, 1.0],
-    ),
-    cardGradient: LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [Color(0xFF555184), Color(0xFF9997BC), Color(0xFFB2A6BE)],
-    ),
-    glassmorphicGradient: LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        Color(0xFFFEE9CE).withOpacity(0.18),
-        Color(0xFF2E3061).withOpacity(0.10),
-        Color(0xFFFEE9CE).withOpacity(0.12),
-      ],
-    ),
-    primaryColor: Color(0xFF2E3061),
-    secondaryColor: Color(0xFF555184),
-    accentColor: Color(0xFF9997BC),
-    surfaceColor: Color(0xFFB2A6BE),
-    backgroundColor: Color(0xFF28293D),
-    textColor: Color(0xFFFEE9CE),
-    mutedTextColor: Color(0xFFB2A6BE),
-    borderColor: Color(0xFF2E3061),
-    shadowColor: Color(0xFF2E3061),
-    dialogDecoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.bottomLeft,
-        end: Alignment.topRight,
-        colors: [
-          Color(0xFF2E3061),
-          Color(0xFF28293D),
-          Color(0xFF555184),
-          Color(0xFF9997BC),
-          Color(0xFFB2A6BE),
-          Color(0xFFFEE9CE),
-        ],
-        stops: [0.0, 0.15, 0.35, 0.55, 0.75, 1.0],
-      ),
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(24),
-        topRight: Radius.circular(24),
-      ),
-      border: Border.all(color: Color(0xFFFEE9CE).withOpacity(0.18), width: 1),
-    ),
-    cardDecoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF555184), Color(0xFF9997BC), Color(0xFFB2A6BE)],
-      ),
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: Color(0xFF2E3061).withOpacity(0.3), width: 1),
-      boxShadow: [
-        BoxShadow(
-          color: Color(0xFF2E3061).withOpacity(0.4),
-          blurRadius: 10,
-          offset: Offset(0, 4),
-        ),
-      ],
-    ),
-    glassmorphicDecoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFFEE9CE).withOpacity(0.18),
-          Color(0xFF2E3061).withOpacity(0.10),
-          Color(0xFFFEE9CE).withOpacity(0.12),
-        ],
-      ),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(
-        color: Color(0xFFFEE9CE).withOpacity(0.18),
-        width: 1.2,
-      ),
-    ),
-  );
-
   // Forest Green Theme
   static final AppTheme forestGreenTheme = AppTheme(
     name: 'Forest Green',
@@ -1128,30 +774,30 @@ class AppThemes {
       ),
       textTheme: TextTheme(
         displayLarge: TextStyle(
-          color: Color(0xFF887A67),
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 32,
           letterSpacing: 1.2,
         ),
         titleLarge: TextStyle(
-          color: Color(0xFF887A67),
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 24,
           letterSpacing: 1.1,
         ),
         titleMedium: TextStyle(
-          color: Color(0xFF3E5646),
+          color: Colors.white,
           fontWeight: FontWeight.w500,
           fontSize: 16,
           letterSpacing: 0.8,
         ),
         bodyLarge: TextStyle(
-          color: Color(0xFF887A67),
+          color: Colors.white,
           fontWeight: FontWeight.w400,
           fontSize: 16,
         ),
         bodyMedium: TextStyle(
-          color: Color(0xFF3E5646),
+          color: Colors.white,
           fontWeight: FontWeight.w400,
           fontSize: 14,
         ),
@@ -1160,13 +806,13 @@ class AppThemes {
       useMaterial3: true,
       appBarTheme: AppBarTheme(
         backgroundColor: Color(0xFF0F1A1E),
-        foregroundColor: Color(0xFF887A67),
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF887A67),
+          color: Colors.white,
         ),
         iconTheme: IconThemeData(color: Color(0xFF193F28)),
       ),
@@ -1180,7 +826,7 @@ class AppThemes {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         tileColor: Color(0xFF3E5646),
         iconColor: Color(0xFF193F28),
-        textColor: Color(0xFF887A67),
+        textColor: Colors.white,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -1190,7 +836,7 @@ class AppThemes {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: Color(0xFF193F28),
-          foregroundColor: Color(0xFF887A67),
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -1201,7 +847,7 @@ class AppThemes {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: Color(0xFF3E5646),
-        contentTextStyle: TextStyle(color: Color(0xFF887A67)),
+        contentTextStyle: TextStyle(color: Colors.white),
       ),
     ),
     mainGradient: LinearGradient(
@@ -1234,7 +880,7 @@ class AppThemes {
     accentColor: Color(0xFF887A67),
     surfaceColor: Color(0xFF3E5646),
     backgroundColor: Color(0xFF0F1A1E),
-    textColor: Color(0xFF887A67),
+    textColor: Colors.white,
     mutedTextColor: Color(0xFF3E5646),
     borderColor: Color(0xFF193F28),
     shadowColor: Color(0xFF193F28),
@@ -1310,30 +956,30 @@ class AppThemes {
       ),
       textTheme: TextTheme(
         displayLarge: TextStyle(
-          color: Color(0xFF6C90C3),
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 32,
           letterSpacing: 1.2,
         ),
         titleLarge: TextStyle(
-          color: Color(0xFF6C90C3),
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 24,
           letterSpacing: 1.1,
         ),
         titleMedium: TextStyle(
-          color: Color(0xFF274272),
+          color: Colors.white,
           fontWeight: FontWeight.w500,
           fontSize: 16,
           letterSpacing: 0.8,
         ),
         bodyLarge: TextStyle(
-          color: Color(0xFF6C90C3),
+          color: Colors.white,
           fontWeight: FontWeight.w400,
           fontSize: 16,
         ),
         bodyMedium: TextStyle(
-          color: Color(0xFF274272),
+          color: Colors.white,
           fontWeight: FontWeight.w400,
           fontSize: 14,
         ),
@@ -1342,13 +988,13 @@ class AppThemes {
       useMaterial3: true,
       appBarTheme: AppBarTheme(
         backgroundColor: Color(0xFF0D1433),
-        foregroundColor: Color(0xFF6C90C3),
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF6C90C3),
+          color: Colors.white,
         ),
         iconTheme: IconThemeData(color: Color(0xFF171F55)),
       ),
@@ -1362,7 +1008,7 @@ class AppThemes {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         tileColor: Color(0xFF274272),
         iconColor: Color(0xFF171F55),
-        textColor: Color(0xFF6C90C3),
+        textColor: Colors.white,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -1372,7 +1018,7 @@ class AppThemes {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: Color(0xFF171F55),
-          foregroundColor: Color(0xFF6C90C3),
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -1383,7 +1029,7 @@ class AppThemes {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: Color(0xFF274272),
-        contentTextStyle: TextStyle(color: Color(0xFF6C90C3)),
+        contentTextStyle: TextStyle(color: Colors.white),
       ),
     ),
     mainGradient: LinearGradient(
@@ -1416,7 +1062,7 @@ class AppThemes {
     accentColor: Color(0xFF6C90C3),
     surfaceColor: Color(0xFF274272),
     backgroundColor: Color(0xFF0D1433),
-    textColor: Color(0xFF6C90C3),
+    textColor: Colors.white,
     mutedTextColor: Color(0xFF274272),
     borderColor: Color(0xFF171F55),
     shadowColor: Color(0xFF171F55),
@@ -1472,18 +1118,553 @@ class AppThemes {
     ),
   );
 
+  // Sandstone Palette (beige/brown)
+  static final AppTheme sandstoneTheme = AppTheme(
+    name: 'Sandstone',
+    themeData: ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: const Color(0xFFC9B08B), // light beige
+      scaffoldBackgroundColor: const Color(0xFF2E241C),
+      cardColor: const Color(0xFF5C4A3E),
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFFC9B08B),
+        secondary: Color(0xFFA98365),
+        background: Color(0xFF2E241C),
+        surface: Color(0xFF5C4A3E),
+        onPrimary: Color(0xFF15110D),
+        onSecondary: Color(0xFF15110D),
+        onBackground: Color(0xFFDCCAAE),
+        onSurface: Color(0xFFDCCAAE),
+      ),
+      textTheme: TextTheme(
+        displayLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 32,
+          letterSpacing: 1.2,
+        ),
+        titleLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 24,
+          letterSpacing: 1.1,
+        ),
+        titleMedium: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+          fontSize: 16,
+          letterSpacing: 0.8,
+        ),
+        bodyLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w400,
+          fontSize: 16,
+        ),
+        bodyMedium: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w400,
+          fontSize: 14,
+        ),
+      ),
+      fontFamily: 'Poppins',
+      useMaterial3: true,
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFF2E241C),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        iconTheme: IconThemeData(color: const Color(0xFFC9B08B)),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF5C4A3E),
+        elevation: 4,
+        shadowColor: const Color(0xFFC9B08B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      listTileTheme: ListTileThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        tileColor: const Color(0xFF5C4A3E),
+        iconColor: const Color(0xFFC9B08B),
+        textColor: Colors.white,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF5C4A3E),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFC9B08B),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: TextStyle(fontWeight: FontWeight.bold),
+          shadowColor: const Color(0xFFC9B08B),
+          elevation: 4,
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF5C4A3E),
+        contentTextStyle: TextStyle(color: Colors.white),
+      ),
+    ),
+    mainGradient: const LinearGradient(
+      begin: Alignment.bottomLeft,
+      end: Alignment.topRight,
+      colors: [
+        Color(0xFF2E241C), // deep brown
+        Color(0xFF5C4A3E), // mid brown
+        Color(0xFFA98365), // warm tan
+        Color(0xFFC9B08B), // light beige
+      ],
+      stops: [0.0, 0.35, 0.7, 1.0],
+    ),
+    cardGradient: const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [Color(0xFF5C4A3E), Color(0xFFA98365)],
+    ),
+    glassmorphicGradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Colors.white.withOpacity(0.18),
+        const Color(0xFF5C4A3E).withOpacity(0.10),
+        Colors.white.withOpacity(0.12),
+      ],
+    ),
+    primaryColor: const Color(0xFFC9B08B),
+    secondaryColor: const Color(0xFFA98365),
+    accentColor: const Color(0xFFDCCAAE),
+    surfaceColor: const Color(0xFF5C4A3E),
+    backgroundColor: const Color(0xFF2E241C),
+    textColor: Colors.white,
+    mutedTextColor: const Color(0xFF9B8673),
+    borderColor: const Color(0xFFA98365),
+    shadowColor: const Color(0xFF2E241C),
+    dialogDecoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.bottomLeft,
+        end: Alignment.topRight,
+        colors: [
+          Color(0xFF2E241C),
+          Color(0xFF5C4A3E),
+          Color(0xFFA98365),
+          Color(0xFFC9B08B),
+        ],
+      ),
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(24),
+        topRight: Radius.circular(24),
+      ),
+      border: Border.all(color: Colors.white.withOpacity(0.18), width: 1),
+    ),
+    cardDecoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF5C4A3E), Color(0xFFA98365)],
+      ),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: Colors.white.withOpacity(0.10), width: 1.2),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF2E241C).withOpacity(0.25),
+          blurRadius: 18,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    ),
+    glassmorphicDecoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withOpacity(0.18),
+          const Color(0xFF5C4A3E).withOpacity(0.10),
+          Colors.white.withOpacity(0.12),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.white.withOpacity(0.18), width: 1.2),
+    ),
+  );
+
+  // Monochrome (grayscale)
+  static final AppTheme monochromeTheme = AppTheme(
+    name: 'Monochrome',
+    themeData: ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: const Color(0xFF61625D),
+      scaffoldBackgroundColor: const Color(0xFF171717),
+      cardColor: const Color(0xFF5D5D5C),
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFF61625D),
+        secondary: Color(0xFFB4B4B4),
+        background: Color(0xFF171717),
+        surface: Color(0xFF5D5D5C),
+        onPrimary: Color(0xFFB4B4B4),
+        onSecondary: Color(0xFFB4B4B4),
+        onBackground: Color(0xFFB4B4B4),
+        onSurface: Color(0xFFB4B4B4),
+      ),
+      textTheme: TextTheme(
+        displayLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 32,
+          letterSpacing: 1.2,
+        ),
+        titleLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 24,
+          letterSpacing: 1.1,
+        ),
+        titleMedium: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+          fontSize: 16,
+          letterSpacing: 0.8,
+        ),
+        bodyLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w400,
+          fontSize: 16,
+        ),
+        bodyMedium: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w400,
+          fontSize: 14,
+        ),
+      ),
+      fontFamily: 'Poppins',
+      useMaterial3: true,
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFF171717),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        iconTheme: IconThemeData(color: const Color(0xFF61625D)),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF5D5D5C),
+        elevation: 4,
+        shadowColor: const Color(0xFF61625D),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      listTileTheme: ListTileThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        tileColor: const Color(0xFF5D5D5C),
+        iconColor: const Color(0xFF61625D),
+        textColor: Colors.white,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF5D5D5C),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF61625D),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: TextStyle(fontWeight: FontWeight.bold),
+          shadowColor: const Color(0xFF61625D),
+          elevation: 4,
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF5D5D5C),
+        contentTextStyle: TextStyle(color: Colors.white),
+      ),
+    ),
+    mainGradient: const LinearGradient(
+      begin: Alignment.bottomLeft,
+      end: Alignment.topRight,
+      colors: [
+        Color(0xFF171717),
+        Color(0xFF5D5D5C),
+        Color(0xFF737373),
+        Color(0xFFB4B4B4),
+      ],
+      stops: [0.0, 0.35, 0.7, 1.0],
+    ),
+    cardGradient: const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [Color(0xFF5D5D5C), Color(0xFF737373)],
+    ),
+    glassmorphicGradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Colors.white.withOpacity(0.18),
+        const Color(0xFF61625D).withOpacity(0.10),
+        Colors.white.withOpacity(0.12),
+      ],
+    ),
+    primaryColor: const Color(0xFF61625D),
+    secondaryColor: const Color(0xFFB4B4B4),
+    accentColor: const Color(0xFF737373),
+    surfaceColor: const Color(0xFF5D5D5C),
+    backgroundColor: const Color(0xFF171717),
+    textColor: Colors.white,
+    mutedTextColor: const Color(0xFF737373),
+    borderColor: const Color(0xFF61625D),
+    shadowColor: const Color(0xFF171717),
+    dialogDecoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.bottomLeft,
+        end: Alignment.topRight,
+        colors: [
+          Color(0xFF171717),
+          Color(0xFF5D5D5C),
+          Color(0xFF737373),
+          Color(0xFFB4B4B4),
+        ],
+      ),
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(24),
+        topRight: Radius.circular(24),
+      ),
+      border: Border.all(color: Colors.white.withOpacity(0.18), width: 1),
+    ),
+    cardDecoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF5D5D5C), Color(0xFF737373)],
+      ),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: Colors.white.withOpacity(0.10), width: 1.2),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF171717).withOpacity(0.25),
+          blurRadius: 18,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    ),
+    glassmorphicDecoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withOpacity(0.18),
+          const Color(0xFF61625D).withOpacity(0.10),
+          Colors.white.withOpacity(0.12),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.white.withOpacity(0.18), width: 1.2),
+    ),
+  );
+
+  // Modern Navy & Cream (based on #0D1321, #FFEDDF, #7D7D7D, #3855E8)
+  static final AppTheme modernNavyTheme = AppTheme(
+    name: 'Modern Navy',
+    themeData: ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: const Color(0xFF3855E8),
+      scaffoldBackgroundColor: const Color(0xFF0D1321),
+      cardColor: const Color(0xFF1B233A),
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFF3855E8),
+        secondary: Color(0xFF7D7D7D),
+        background: Color(0xFF0D1321),
+        surface: Color(0xFF1B233A),
+        onPrimary: Color(0xFFFFEDDF),
+        onSecondary: Color(0xFFFFEDDF),
+        onBackground: Color(0xFFFFEDDF),
+        onSurface: Color(0xFFFFEDDF),
+      ),
+      textTheme: TextTheme(
+        displayLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 32,
+          letterSpacing: 1.2,
+        ),
+        titleLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 24,
+          letterSpacing: 1.1,
+        ),
+        titleMedium: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+          fontSize: 16,
+          letterSpacing: 0.8,
+        ),
+        bodyLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w400,
+          fontSize: 16,
+        ),
+        bodyMedium: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w400,
+          fontSize: 14,
+        ),
+      ),
+      fontFamily: 'Poppins',
+      useMaterial3: true,
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFF0D1321),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        iconTheme: IconThemeData(color: const Color(0xFF3855E8)),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF1B233A),
+        elevation: 4,
+        shadowColor: const Color(0xFF3855E8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      listTileTheme: ListTileThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        tileColor: const Color(0xFF1B233A),
+        iconColor: const Color(0xFF3855E8),
+        textColor: Colors.white,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF1B233A),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF3855E8),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: TextStyle(fontWeight: FontWeight.bold),
+          shadowColor: const Color(0xFF3855E8),
+          elevation: 4,
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF1B233A),
+        contentTextStyle: TextStyle(color: Colors.white),
+      ),
+    ),
+    mainGradient: const LinearGradient(
+      begin: Alignment.bottomLeft,
+      end: Alignment.topRight,
+      colors: [
+        Color(0xFF0D1321),
+        Color(0xFF1B233A),
+        Color(0xFF7D7D7D),
+        Color(0xFF3855E8),
+      ],
+      stops: [0.0, 0.3, 0.65, 1.0],
+    ),
+    cardGradient: const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [Color(0xFF1B233A), Color(0xFF3855E8)],
+    ),
+    glassmorphicGradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Colors.white.withOpacity(0.18),
+        const Color(0xFF3855E8).withOpacity(0.10),
+        Colors.white.withOpacity(0.12),
+      ],
+    ),
+    primaryColor: const Color(0xFF3855E8),
+    secondaryColor: const Color(0xFF7D7D7D),
+    accentColor: const Color(0xFFFFEDDF),
+    surfaceColor: const Color(0xFF1B233A),
+    backgroundColor: const Color(0xFF0D1321),
+    textColor: Colors.white,
+    mutedTextColor: const Color(0xFF7D7D7D),
+    borderColor: const Color(0xFF3855E8),
+    shadowColor: const Color(0xFF0D1321),
+    dialogDecoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.bottomLeft,
+        end: Alignment.topRight,
+        colors: [
+          Color(0xFF0D1321),
+          Color(0xFF1B233A),
+          Color(0xFF7D7D7D),
+          Color(0xFF3855E8),
+        ],
+      ),
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(24),
+        topRight: Radius.circular(24),
+      ),
+      border: Border.all(color: Colors.white.withOpacity(0.18), width: 1),
+    ),
+    cardDecoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF1B233A), Color(0xFF3855E8)],
+      ),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: Colors.white.withOpacity(0.10), width: 1.2),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF0D1321).withOpacity(0.25),
+          blurRadius: 18,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    ),
+    glassmorphicDecoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withOpacity(0.18),
+          const Color(0xFF3855E8).withOpacity(0.10),
+          Colors.white.withOpacity(0.12),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.white.withOpacity(0.18), width: 1.2),
+    ),
+  );
+
   static final ValueNotifier<AppTheme> currentThemeNotifier =
       ValueNotifier<AppTheme>(defaultTheme);
 
   static final List<AppTheme> availableThemes = [
     defaultTheme,
-    reddishTheme,
     redMistTheme,
     blueVioletTheme,
     sakuraTheme,
-    winterNightTheme,
     forestGreenTheme,
     bluePaletteTheme,
+    sandstoneTheme,
+    monochromeTheme,
+    modernNavyTheme,
   ];
 
   // Helper methods to get current theme properties
@@ -1507,4 +1688,25 @@ class AppThemes {
   static BoxDecoration get currentCardDecoration => currentTheme.cardDecoration;
   static BoxDecoration get currentGlassmorphicDecoration =>
       currentTheme.glassmorphicDecoration;
+
+  // Persistence
+  static const String _prefsKeySelectedTheme = 'selected_theme_name';
+
+  static Future<void> loadSavedTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedName = prefs.getString(_prefsKeySelectedTheme);
+    if (savedName != null) {
+      final theme = availableThemes.firstWhere(
+        (t) => t.name == savedName,
+        orElse: () => defaultTheme,
+      );
+      currentThemeNotifier.value = theme;
+    }
+  }
+
+  static Future<void> setCurrentTheme(AppTheme theme) async {
+    currentThemeNotifier.value = theme;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefsKeySelectedTheme, theme.name);
+  }
 }

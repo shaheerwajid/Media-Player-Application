@@ -482,7 +482,10 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                                             success
                                                 ? 'Ringtone set'
                                                 : 'Failed to set ringtone',
-                                            style: GoogleFonts.poppins(),
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                           backgroundColor: success
                                               ? Colors.green
@@ -1047,8 +1050,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   @override
   Widget build(BuildContext context) {
     final currentAudio = widget.audios[_currentIndex];
-    String? lyrics =
-        'Sample lyrics for this audio.\nMore lines...\n(Integrate real lyrics here)';
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.audios[_currentIndex].title ?? 'Audio'),
@@ -1094,7 +1095,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                   await NativeAudioService.seekTo(ms);
                 },
                 albumArt: null,
-                lyrics: lyrics,
               );
             }
             final file = fileSnapshot.data;
@@ -1141,7 +1141,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                     await NativeAudioService.seekTo(ms);
                   },
                   albumArt: albumArt,
-                  lyrics: lyrics,
                 );
               },
             );

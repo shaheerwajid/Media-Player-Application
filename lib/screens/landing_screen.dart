@@ -40,12 +40,8 @@ class _LandingScreenState extends State<LandingScreen> {
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Theme.of(context).colorScheme.onBackground,
-        centerTitle: true,
-        titleTextStyle: const TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.2,
-        ),
+        centerTitle: false,
+        titleTextStyle: Theme.of(context).textTheme.displayMedium,
       ),
       extendBodyBehindAppBar: true,
       body: Container(

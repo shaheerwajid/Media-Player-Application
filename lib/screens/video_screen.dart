@@ -335,10 +335,12 @@ class _VideoScreenState extends State<VideoScreen> {
           content: TextField(
             controller: playlistController,
             autofocus: true,
-            style: GoogleFonts.poppins(color: const Color(0xFFCCD0CF)),
+            style: GoogleFonts.poppins(color: Colors.white),
             decoration: InputDecoration(
               hintText: 'Enter playlist name',
-              hintStyle: GoogleFonts.poppins(color: const Color(0xFF9BA8AB)),
+              hintStyle: GoogleFonts.poppins(
+                color: Colors.white.withOpacity(0.7),
+              ),
               border: const OutlineInputBorder(),
               enabledBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: Color(0xFF253745)),
@@ -353,7 +355,9 @@ class _VideoScreenState extends State<VideoScreen> {
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel',
-                style: GoogleFonts.poppins(color: const Color(0xFF9BA8AB)),
+                style: GoogleFonts.poppins(
+                  color: Colors.white.withOpacity(0.7),
+                ),
               ),
             ),
             TextButton(
@@ -367,7 +371,7 @@ class _VideoScreenState extends State<VideoScreen> {
               child: Text(
                 'Create',
                 style: GoogleFonts.poppins(
-                  color: const Color(0xFF4A5C6A),
+                  color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -587,10 +591,7 @@ class _VideoScreenState extends State<VideoScreen> {
                   fillColor: Theme.of(
                     context,
                   ).colorScheme.primary.withOpacity(0.18),
-                  prefixIcon: Icon(
-                    Icons.search_outlined,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                  prefixIcon: Icon(Icons.search_outlined, color: Colors.white),
                 ),
               )
             : Text(
@@ -607,10 +608,7 @@ class _VideoScreenState extends State<VideoScreen> {
         actions: [
           if (_isSearching)
             IconButton(
-              icon: Icon(
-                Icons.close_outlined,
-                color: Theme.of(context).colorScheme.secondary,
-              ),
+              icon: Icon(Icons.close_outlined, color: Colors.white),
               onPressed: () {
                 setState(() {
                   _isSearching = false;
@@ -622,7 +620,12 @@ class _VideoScreenState extends State<VideoScreen> {
             )
           else ...[
             IconButton(
-              icon: Image.asset('assets/search.png', width: 24, height: 24),
+              icon: Image.asset(
+                'assets/search.png',
+                width: 24,
+                height: 24,
+                color: Colors.white,
+              ),
               onPressed: () {
                 setState(() {
                   _isSearching = true;
@@ -651,10 +654,10 @@ class _VideoScreenState extends State<VideoScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        color: Theme.of(context).colorScheme.secondary,
-                        size: 20,
+                      icon: Image.asset(
+                        'assets/delete.png',
+                        width: 20,
+                        height: 20,
                       ),
                       onPressed: () {
                         _clearHistory();
@@ -794,7 +797,9 @@ class _VideoScreenState extends State<VideoScreen> {
                       ),
                       child: IconButton(
                         icon: Image.asset(
-                          'assets/view.png',
+                          _isGridView
+                              ? 'assets/view.png'
+                              : 'assets/list_view.png',
                           width: 22,
                           height: 22,
                         ),
@@ -1453,7 +1458,14 @@ class _VideoScreenState extends State<VideoScreen> {
                   height: 48,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: const Color(0xFF253745),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withOpacity(0.22),
+                        Colors.white.withOpacity(0.10),
+                      ],
+                    ),
                   ),
                   child: thumbWidget,
                 );
@@ -1529,9 +1541,10 @@ class _VideoScreenState extends State<VideoScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.folder_outlined,
-                  size: 28,
+                Image.asset(
+                  'assets/folder.png',
+                  width: 28,
+                  height: 28,
                   color: const Color(0xFFCCD0CF),
                 ),
                 const SizedBox(height: 4),
@@ -1540,7 +1553,7 @@ class _VideoScreenState extends State<VideoScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
-                    color: const Color(0xFFCCD0CF),
+                    color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1548,9 +1561,8 @@ class _VideoScreenState extends State<VideoScreen> {
                 const SizedBox(height: 2),
                 Text(
                   '$count video${count == 1 ? '' : 's'}',
-                  style: const TextStyle(
-                    color: Color(0xFF9BA8AB),
-                    fontSize: 12,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withOpacity(0.7),
                   ),
                 ),
               ],
@@ -1727,18 +1739,13 @@ class _VideoScreenState extends State<VideoScreen> {
                     playlist,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFCCD0CF),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '$count video${count == 1 ? '' : 's'}',
-                    style: const TextStyle(
-                      color: Color(0xFF9BA8AB),
-                      fontSize: 12,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withOpacity(0.7),
                     ),
                   ),
                 ],
@@ -1758,10 +1765,10 @@ class _VideoScreenState extends State<VideoScreen> {
         : <AssetEntity>[];
 
     if (playlistVideos.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No videos in this playlist.',
-          style: TextStyle(color: Color(0xFF9BA8AB), fontSize: 16),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
       );
     }
@@ -1837,16 +1844,14 @@ class _VideoScreenState extends State<VideoScreen> {
             children: [
               // Folder icon
               Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: const Color(0xFF253745),
-                ),
-                child: const Icon(
-                  Icons.folder_outlined,
-                  color: Color(0xFFCCD0CF),
-                  size: 32,
+                width: 32,
+                height: 32,
+
+                child: Image.asset(
+                  'assets/folder.png',
+                  width: 18,
+                  height: 18,
+                  color: const Color(0xFF0E1A22),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1857,11 +1862,7 @@ class _VideoScreenState extends State<VideoScreen> {
                   children: [
                     Text(
                       folder.split(Platform.pathSeparator).last,
-                      style: const TextStyle(
-                        color: Color(0xFFCCD0CF),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -1875,9 +1876,9 @@ class _VideoScreenState extends State<VideoScreen> {
                 ),
               ),
               // Arrow icon
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios,
-                color: Color(0xFF9BA8AB),
+                color: Colors.white.withOpacity(0.7),
                 size: 16,
               ),
             ],
@@ -1931,11 +1932,7 @@ class _VideoScreenState extends State<VideoScreen> {
                   children: [
                     Text(
                       playlist,
-                      style: const TextStyle(
-                        color: Color(0xFFCCD0CF),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -1949,9 +1946,9 @@ class _VideoScreenState extends State<VideoScreen> {
                 ),
               ),
               // Arrow icon
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios,
-                color: Color(0xFF9BA8AB),
+                color: Colors.white.withOpacity(0.7),
                 size: 16,
               ),
             ],
@@ -1983,14 +1980,14 @@ class _VideoScreenState extends State<VideoScreen> {
           children: [
             const Icon(
               Icons.arrow_back_outlined,
-              color: Color(0xFFCCD0CF),
+              color: Colors.white,
               size: 24,
             ),
             const SizedBox(width: 12),
             const Text(
               'Back to Playlists',
               style: TextStyle(
-                color: Color(0xFFCCD0CF),
+                color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -2068,17 +2065,24 @@ class _VideoScreenState extends State<VideoScreen> {
                         thumbWidget = Container(
                           width: double.infinity,
                           height: double.infinity,
-                          decoration: const BoxDecoration(
-                            borderRadius: BorderRadius.only(
+                          decoration: BoxDecoration(
+                            borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(16),
                               topRight: Radius.circular(16),
                             ),
-                            color: Color(0xFF253745),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white.withOpacity(0.22),
+                                Colors.white.withOpacity(0.10),
+                              ],
+                            ),
                           ),
                           child: const Center(
                             child: Icon(
                               Icons.movie_outlined,
-                              color: Color(0xFF9BA8AB),
+                              color: Color(0xFF0E1A22),
                               size: 32,
                             ),
                           ),
@@ -2417,14 +2421,12 @@ class _VideoScreenState extends State<VideoScreen> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF4A5C6A,
-                                  ).withOpacity(0.3),
+                                  color: Colors.white.withOpacity(0.18),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
                                   Icons.sort,
-                                  color: Color(0xFFCCD0CF),
+                                  color: Colors.white,
                                   size: 24,
                                 ),
                               ),
@@ -2443,12 +2445,12 @@ class _VideoScreenState extends State<VideoScreen> {
                                 icon: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: Colors.white.withOpacity(0.18),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Icon(
                                     Icons.close,
-                                    color: Color(0xFF9BA8AB),
+                                    color: Colors.white,
                                     size: 20,
                                   ),
                                 ),

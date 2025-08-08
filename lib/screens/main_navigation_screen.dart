@@ -54,7 +54,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         items: [
           NavBarItem(label: 'Video', assetPath: 'assets/video.png'),
           NavBarItem(label: 'Music', assetPath: 'assets/music.png'),
-          NavBarItem(label: 'Me', assetPath: 'assets/settings.png'),
+          NavBarItem(label: 'Settings', assetPath: 'assets/settings.png'),
         ],
       ),
     );

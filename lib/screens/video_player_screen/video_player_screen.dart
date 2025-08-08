@@ -607,14 +607,30 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         // So we'll show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Screenshot saved to gallery!')),
+            SnackBar(
+              content: Text(
+                'Screenshot saved to gallery!',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
           );
         }
       } catch (mediaStoreError) {
         // If MediaStore fails, but file exists, still show success
         if (await file.exists() && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Screenshot saved to gallery!')),
+            SnackBar(
+              content: Text(
+                'Screenshot saved to gallery!',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
           );
         } else {
           throw mediaStoreError;
@@ -623,7 +639,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save screenshot: ${e.toString()}')),
+          SnackBar(
+            content: Text(
+              'Failed to save screenshot: ${e.toString()}',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
         );
       }
     }
@@ -723,14 +747,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF4A5C6A,
-                                  ).withOpacity(0.3),
+                                  color: Colors.white.withOpacity(0.18),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
                                   Icons.more_vert,
-                                  color: Color(0xFFCCD0CF),
+                                  color: Colors.white,
                                   size: 24,
                                 ),
                               ),
@@ -1390,14 +1412,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF4A5C6A,
-                                  ).withOpacity(0.3),
+                                  color: Colors.white.withOpacity(0.18),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
                                   Icons.more_vert,
-                                  color: Color(0xFFCCD0CF),
+                                  color: Colors.white,
                                   size: 24,
                                 ),
                               ),
@@ -2304,7 +2324,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                       },
                       albumArt:
                           null, // You can add album art logic if available
-                      lyrics: null, // Add lyrics if available
                       onSwitchToVideo: _switchToVideo,
                     )
                   else
@@ -3227,10 +3246,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           content: TextField(
             controller: playlistController,
             autofocus: true,
-            style: GoogleFonts.poppins(color: const Color(0xFFCCD0CF)),
+            style: GoogleFonts.poppins(color: Colors.white),
             decoration: InputDecoration(
               hintText: 'Enter playlist name',
-              hintStyle: GoogleFonts.poppins(color: const Color(0xFF9BA8AB)),
+              hintStyle: GoogleFonts.poppins(
+                color: Colors.white.withOpacity(0.7),
+              ),
               border: const OutlineInputBorder(),
               enabledBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: Color(0xFF253745)),
@@ -3245,7 +3266,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel',
-                style: GoogleFonts.poppins(color: const Color(0xFF9BA8AB)),
+                style: GoogleFonts.poppins(
+                  color: Colors.white.withOpacity(0.7),
+                ),
               ),
             ),
             TextButton(
@@ -3263,7 +3286,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               child: Text(
                 'Create',
                 style: GoogleFonts.poppins(
-                  color: const Color(0xFF4A5C6A),
+                  color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),

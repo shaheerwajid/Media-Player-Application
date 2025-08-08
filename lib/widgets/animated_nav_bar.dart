@@ -425,9 +425,7 @@ class AnimatedNavBarItem extends StatelessWidget {
         if (showLabel)
           Text(
             label,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 12,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),

@@ -807,7 +807,10 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         SnackBar(
           content: Text(
             'Playlist "$name" created successfully!',
-            style: GoogleFonts.poppins(),
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           backgroundColor: const Color(0xFF4A5C6A),
           duration: const Duration(seconds: 2),
@@ -819,7 +822,10 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         SnackBar(
           content: Text(
             'Playlist "$name" already exists!',
-            style: GoogleFonts.poppins(),
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           backgroundColor: Colors.red.withOpacity(0.8),
           duration: const Duration(seconds: 2),
@@ -1255,14 +1261,13 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                   ),
                 ),
                 // Favourite icon
-                Icon(
-                  _favourites.contains(asset.id)
-                      ? Icons.favorite
-                      : Icons.favorite_border,
+                Image.asset(
+                  'assets/favourite.png',
+                  width: 24,
+                  height: 24,
                   color: _favourites.contains(asset.id)
-                      ? Colors.red
+                      ? Colors.amber
                       : const Color(0xFF9BA8AB),
-                  size: 24,
                 ),
               ],
             ),
@@ -1543,9 +1548,10 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.folder_outlined,
-                    size: 28,
+                  Image.asset(
+                    'assets/folder.png',
+                    width: 28,
+                    height: 28,
                     color: const Color(0xFFCCD0CF),
                   ),
                   const SizedBox(height: 4),
@@ -2011,10 +2017,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                   fillColor: Theme.of(
                     context,
                   ).colorScheme.primary.withOpacity(0.18),
-                  prefixIcon: Icon(
-                    Icons.search_outlined,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                  prefixIcon: Icon(Icons.search_outlined, color: Colors.white),
                 ),
               )
             : Text(
@@ -2027,20 +2030,22 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
           decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         ),
         foregroundColor: Theme.of(context).colorScheme.onSurface,
-        centerTitle: true,
+        centerTitle: false,
         titleTextStyle: Theme.of(context).textTheme.titleLarge,
         actions: [
           if (_isSearching)
             IconButton(
-              icon: Icon(
-                Icons.close_outlined,
-                color: Theme.of(context).colorScheme.secondary,
-              ),
+              icon: Icon(Icons.close_outlined, color: Colors.white),
               onPressed: _stopSearch,
             )
           else ...[
             IconButton(
-              icon: Image.asset('assets/search.png', width: 24, height: 24),
+              icon: Image.asset(
+                'assets/search.png',
+                width: 24,
+                height: 24,
+                color: Colors.white,
+              ),
               onPressed: _startSearch,
             ),
           ],

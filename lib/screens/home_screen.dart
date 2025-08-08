@@ -442,7 +442,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
         ),
         foregroundColor: Theme.of(context).colorScheme.onBackground,
-        centerTitle: true,
+        centerTitle: false,
         titleTextStyle: Theme.of(context).textTheme.titleLarge,
       ),
       extendBodyBehindAppBar: true,
@@ -486,43 +486,45 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                                 ),
                                 duration: const Duration(milliseconds: 400),
                                 curve: Curves.easeOut,
-                                builder: (context, offset, child) =>
-                                    AnimatedOpacity(
-                                      opacity: 1.0,
-                                      duration: const Duration(
-                                        milliseconds: 400,
-                                      ),
-                                      curve: Curves.easeOut,
-                                      child: AnimatedSlide(
-                                        offset: offset,
-                                        duration: const Duration(
-                                          milliseconds: 400,
+                                builder: (context, offset, child) => AnimatedOpacity(
+                                  opacity: 1.0,
+                                  duration: const Duration(milliseconds: 400),
+                                  curve: Curves.easeOut,
+                                  child: AnimatedSlide(
+                                    offset: offset,
+                                    duration: const Duration(milliseconds: 400),
+                                    curve: Curves.easeOut,
+                                    child: _AnimatedMediaFileCard(
+                                      child: MediaFileCard(
+                                        // Replace default folder icon with custom asset
+                                        icon: null,
+                                        thumbnail: Image.asset(
+                                          'assets/folder.png',
+                                          width: 28,
+                                          height: 28,
+                                          color: const Color(0xFFCCD0CF),
                                         ),
-                                        curve: Curves.easeOut,
-                                        child: _AnimatedMediaFileCard(
-                                          child: MediaFileCard(
-                                            icon: Icons.folder_outlined,
-                                            title: folder
-                                                .split(Platform.pathSeparator)
-                                                .last,
-                                            subtitle:
-                                                '$count video${count == 1 ? '' : 's'}',
-                                            isFavourite: false,
-                                            onTap: () {
-                                              setState(() {
-                                                _selectedFolder = folder;
-                                              });
-                                            },
-                                            overlayColor: overlayColor,
-                                          ),
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedFolder = folder;
-                                            });
-                                          },
-                                        ),
+                                        title: folder
+                                            .split(Platform.pathSeparator)
+                                            .last,
+                                        subtitle:
+                                            '$count video${count == 1 ? '' : 's'}',
+                                        isFavourite: false,
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedFolder = folder;
+                                          });
+                                        },
+                                        overlayColor: overlayColor,
                                       ),
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedFolder = folder;
+                                        });
+                                      },
                                     ),
+                                  ),
+                                ),
                               );
                             },
                           ),

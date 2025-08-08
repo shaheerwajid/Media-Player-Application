@@ -17,7 +17,6 @@ class AudioScreenStandalone extends StatefulWidget {
   final VoidCallback onPlayPause;
   final void Function(int ms)? onSeek;
   final ImageProvider? albumArt;
-  final String? lyrics;
   final VoidCallback? onSwitchToVideo;
 
   const AudioScreenStandalone({
@@ -33,7 +32,6 @@ class AudioScreenStandalone extends StatefulWidget {
     required this.onPlayPause,
     this.onSeek,
     this.albumArt,
-    this.lyrics,
     this.onSwitchToVideo,
   }) : super(key: key);
 
@@ -318,8 +316,8 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                                 }
                               },
                               activeColor: isPlaying
-                                  ? const Color(0xFFCCD0CF)
-                                  : const Color(0xFF4A5C6A),
+                                  ? AppThemes.currentTheme.textColor
+                                  : AppThemes.currentTheme.mutedTextColor,
                             ),
                           ],
                         ),
@@ -338,7 +336,7 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                             '${widget.formatDuration(Duration(milliseconds: _sliderValue.toInt()))} / '
                             '${widget.formatDuration(Duration(milliseconds: widget.totalDurationMs ?? 0))}',
                             style: GoogleFonts.poppins(
-                              color: const Color(0xFFCCD0CF),
+                              color: AppThemes.currentTheme.textColor,
                               fontWeight: FontWeight.w500,
                               fontSize: 14,
                               letterSpacing: 0.5,
@@ -348,58 +346,6 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                         // Animated waveform
                         const SizedBox(height: 16),
                         AnimatedWaveform(isPlaying: isPlaying),
-                        // Lyrics area
-                        const SizedBox(height: 16),
-                        if (widget.lyrics != null && widget.lyrics!.isNotEmpty)
-                          Container(
-                            width: 320,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.10),
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Text(
-                              widget.lyrics!,
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFFCCD0CF),
-                                fontSize: 15,
-                                fontWeight: FontWeight.w400,
-                                height: 1.4,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 5,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        if (widget.lyrics == null || widget.lyrics!.isEmpty)
-                          Container(
-                            width: 220,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: Colors.white.withOpacity(0.07),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'No lyrics available',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white.withOpacity(0.32),
-                                  fontSize: 13,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ),
@@ -423,6 +369,7 @@ class _GlassIconButton extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final currentTheme = AppThemes.currentTheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -442,7 +389,7 @@ class _GlassIconButton extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(icon, color: const Color(0xFF9BA8AB), size: size),
+          child: Icon(icon, color: Colors.white, size: size),
         ),
       ),
     );
@@ -456,6 +403,7 @@ class _GlowingPlayPauseButton extends StatelessWidget {
   const _GlowingPlayPauseButton({required this.isPlaying, required this.onTap});
   @override
   Widget build(BuildContext context) {
+    final currentTheme = AppThemes.currentTheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -464,12 +412,14 @@ class _GlowingPlayPauseButton extends StatelessWidget {
         height: 68,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isPlaying ? const Color(0xFF4A5C6A) : const Color(0xFF9BA8AB),
+          color: isPlaying
+              ? currentTheme.primaryColor
+              : currentTheme.mutedTextColor,
           boxShadow: [
             BoxShadow(
               color: isPlaying
-                  ? const Color(0xFF4A5C6A).withOpacity(0.45)
-                  : const Color(0xFF9BA8AB).withOpacity(0.22),
+                  ? currentTheme.primaryColor.withOpacity(0.45)
+                  : currentTheme.mutedTextColor.withOpacity(0.22),
               blurRadius: isPlaying ? 24 : 10,
               spreadRadius: isPlaying ? 4 : 1,
             ),
@@ -501,13 +451,24 @@ class _GlassProgressBar extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    return Slider(
-      value: value,
-      min: 0,
-      max: max,
-      onChanged: onChanged,
-      onChangeEnd: onChangeEnd,
-      activeColor: activeColor,
+    final currentTheme = AppThemes.currentTheme;
+    return SliderTheme(
+      data: SliderTheme.of(context).copyWith(
+        trackHeight: 2.0,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0),
+        activeTrackColor: activeColor,
+        inactiveTrackColor: currentTheme.mutedTextColor.withOpacity(0.3),
+        thumbColor: activeColor,
+        overlayColor: activeColor.withOpacity(0.2),
+      ),
+      child: Slider(
+        value: value,
+        min: 0,
+        max: max,
+        onChanged: onChanged,
+        onChangeEnd: onChangeEnd,
+      ),
     );
   }
 }
@@ -569,6 +530,7 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
 
   @override
   Widget build(BuildContext context) {
+    final currentTheme = AppThemes.currentTheme;
     return SizedBox(
       width: 120,
       height: 32,
@@ -585,17 +547,17 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(3),
                   color: widget.isPlaying
-                      ? const Color(0xFFCCD0CF)
-                      : const Color(0xFF4A5C6A).withOpacity(0.4),
+                      ? currentTheme.textColor
+                      : currentTheme.mutedTextColor.withOpacity(0.4),
                   boxShadow: widget.isPlaying
                       ? [
                           BoxShadow(
-                            color: const Color(0xFFCCD0CF).withOpacity(0.32),
+                            color: currentTheme.textColor.withOpacity(0.32),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
                           BoxShadow(
-                            color: const Color(0xFFCCD0CF).withOpacity(0.12),
+                            color: currentTheme.textColor.withOpacity(0.12),
                             blurRadius: 18,
                             spreadRadius: 4,
                           ),
@@ -717,6 +679,7 @@ class _CircularWaveformPainter extends CustomPainter {
   });
   @override
   void paint(Canvas canvas, Size size) {
+    final currentTheme = AppThemes.currentTheme;
     final center = Offset(size.width / 2, size.height / 2);
     final angleStep = 2 * 3.1415926535 / barCount;
     for (int i = 0; i < barCount; i++) {
@@ -733,13 +696,13 @@ class _CircularWaveformPainter extends CustomPainter {
       );
       final paint = Paint()
         ..color = isPlaying
-            ? const Color(0xFFCCD0CF)
-            : const Color(0xFF4A5C6A).withOpacity(0.4)
+            ? currentTheme.textColor
+            : currentTheme.mutedTextColor.withOpacity(0.4)
         ..strokeWidth = barWidth
         ..strokeCap = StrokeCap.round;
       if (isPlaying) {
         final glowPaint = Paint()
-          ..color = const Color(0xFFCCD0CF).withOpacity(0.22)
+          ..color = currentTheme.textColor.withOpacity(0.22)
           ..strokeWidth = barWidth * 2.5
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
         canvas.drawLine(start, end, glowPaint);
