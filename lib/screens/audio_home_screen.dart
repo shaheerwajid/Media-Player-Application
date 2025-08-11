@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 import '../services/audio_service.dart';
+import '../services/audio_cache_service.dart';
+import '../services/background_audio_processor.dart';
 import 'audio_player_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../main.dart';
@@ -10,6 +12,8 @@ import 'dart:ui';
 import '../widgets/skeleton_media_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme_data.dart';
+import '../services/current_audio_context.dart';
+import '../services/native_audio_service.dart';
 
 class MediaFileCard extends StatefulWidget {
   final IconData icon;
@@ -216,12 +220,29 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
   String? _selectedAlbum;
   String? _selectedArtist;
 
+  // Pagination support
+  int _currentPage = 0;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  static const int _pageSize = 50;
+
   @override
   void initState() {
     super.initState();
     _initPrefs();
+    _initializeServices();
     _fetchAllAudios();
     _searchController.addListener(_onSearchChanged);
+    // Listen for playback changes to refresh UI indicators if needed
+    NativeAudioService.playbackStateStream.listen((event) {
+      if (!mounted) return;
+      setState(() {});
+    });
+  }
+
+  Future<void> _initializeServices() async {
+    await AudioCacheService.loadPersistedCacheKeys();
+    await BackgroundAudioProcessor.initialize();
   }
 
   void _onSearchChanged() {
@@ -1151,44 +1172,75 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: audios.length,
+      itemCount: audios.length + (_hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index == audios.length) {
+          // Load more button
+          return _buildLoadMoreButton();
+        }
+
         final asset = audios[index];
-        return TweenAnimationBuilder<double>(
-          duration: Duration(milliseconds: 600 + (index * 50)),
-          curve: Curves.easeOutCubic,
-          tween: Tween<double>(begin: 0.0, end: 1.0),
-          builder: (context, value, child) {
-            return Transform.translate(
-              offset: Offset(0, 20 * (1 - value)),
-              child: Opacity(
-                opacity: value,
-                child: Transform.scale(
-                  scale: 0.8 + (0.2 * value),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: _buildAudioListCard(asset, index),
+        return _buildAnimatedAudioCard(asset, index);
+      },
+    );
+  }
+
+  Widget _buildAnimatedAudioCard(AssetEntity asset, int index) {
+    return AnimatedOpacity(
+      duration: Duration(milliseconds: 200 + (index * 20)),
+      opacity: 1.0,
+      child: AnimatedSlide(
+        duration: Duration(milliseconds: 300 + (index * 30)),
+        offset: Offset.zero,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: _buildAudioListCard(asset, index),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadMoreButton() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: _isLoadingMore
+            ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              )
+            : ElevatedButton(
+                onPressed: _hasMore ? _loadMoreAudios : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4A5C6A).withOpacity(0.3),
+                  foregroundColor: const Color(0xFFCCD0CF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: Text(
+                  'Load More',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-            );
-          },
-        );
-      },
+      ),
     );
   }
 
   Widget _buildAudioListCard(AssetEntity asset, int index) {
     return GestureDetector(
       onTap: () {
+        final audios = _getFilteredAudios();
+        final initial = audios.indexWhere((a) => a.id == asset.id);
+        if (initial >= 0) {
+          CurrentAudioContext.setSelection(audios, initial);
+        }
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => AudioPlayerScreen(
-              audios: _getFilteredAudios(),
-              initialIndex: _getFilteredAudios().indexWhere(
-                (a) => a.id == asset.id,
-              ),
-            ),
+            builder: (_) =>
+                AudioPlayerScreen(audios: audios, initialIndex: initial),
           ),
         );
       },
@@ -1872,10 +1924,15 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
     if (mounted) {
       setState(() {
         _loading = true;
+        _currentPage = 0;
+        _hasMore = true;
       });
     }
 
-    final result = await AudioService.fetchAllAudios();
+    final result = await AudioService.fetchAudiosPaginated(
+      page: _currentPage,
+      pageSize: _pageSize,
+    );
 
     if (!mounted) return; // Early return if widget is disposed
 
@@ -1895,6 +1952,7 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         setState(() {
           _audioAssets = uniqueAudios;
           _loading = false;
+          _hasMore = result.hasMore;
         });
       }
 
@@ -1902,6 +1960,11 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         _buildFolderMap(result.audios);
         _buildAlbumMap(result.audios);
         _buildArtistMap(result.audios);
+      }
+
+      // Process metadata in background
+      if (uniqueAudios.isNotEmpty) {
+        _processMetadataInBackground(uniqueAudios);
       }
     } else {
       if (mounted) {
@@ -1921,6 +1984,116 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
         PhotoManager.openSetting();
       }
     }
+  }
+
+  Future<void> _loadMoreAudios() async {
+    if (_isLoadingMore || !_hasMore) return;
+
+    if (mounted) {
+      setState(() {
+        _isLoadingMore = true;
+      });
+    }
+
+    try {
+      final nextPage = _currentPage + 1;
+      final result = await AudioService.fetchAudiosPaginated(
+        page: nextPage,
+        pageSize: _pageSize,
+      );
+
+      if (!mounted) return;
+
+      if (result.audios.isNotEmpty) {
+        final newAudios = <AssetEntity>[];
+        final existingIds = _audioAssets.map((a) => a.id).toSet();
+
+        for (final audio in result.audios) {
+          if (!existingIds.contains(audio.id)) {
+            newAudios.add(audio);
+            existingIds.add(audio.id);
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _audioAssets.addAll(newAudios);
+            _currentPage = nextPage;
+            _hasMore = result.hasMore;
+            _isLoadingMore = false;
+          });
+        }
+
+        // Process new metadata in background
+        if (newAudios.isNotEmpty) {
+          _processMetadataInBackground(newAudios);
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _hasMore = false;
+            _isLoadingMore = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
+    }
+  }
+
+  void _processMetadataInBackground(List<AssetEntity> audios) {
+    // Process metadata in background without blocking UI
+    BackgroundAudioProcessor.processMultipleAudios(audios).catchError((e) {
+      print('Background metadata processing error: $e');
+    });
+  }
+
+  // Cache management methods
+  void _clearCache() {
+    AudioCacheService.clearCache();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Cache cleared successfully',
+          style: GoogleFonts.poppins(color: Colors.white),
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  Map<String, dynamic> _getCacheStats() {
+    return AudioCacheService.getCacheStats();
+  }
+
+  void _showCacheStats() {
+    final stats = _getCacheStats();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Cache Statistics'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('File Cache: ${stats['fileCacheSize']} items'),
+            Text('Album Art Cache: ${stats['albumArtCacheSize']} items'),
+            Text('Metadata Cache: ${stats['metadataCacheSize']} items'),
+            Text('Max Cache Size: ${stats['maxCacheSize']} items'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _buildFolderMap(List<AssetEntity> assets) async {
@@ -1973,6 +2146,8 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
     try {
       routeObserver.unsubscribe(this);
     } catch (_) {}
+    // Cleanup background processor
+    BackgroundAudioProcessor.dispose();
     super.dispose();
   }
 
@@ -2047,6 +2222,41 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
                 color: Colors.white,
               ),
               onPressed: _startSearch,
+            ),
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert, color: Colors.white),
+              onSelected: (value) {
+                switch (value) {
+                  case 'cache_stats':
+                    _showCacheStats();
+                    break;
+                  case 'clear_cache':
+                    _clearCache();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'cache_stats',
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline),
+                      const SizedBox(width: 8),
+                      Text('Cache Info'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'clear_cache',
+                  child: Row(
+                    children: [
+                      Icon(Icons.clear_all),
+                      const SizedBox(width: 8),
+                      Text('Clear Cache'),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ],

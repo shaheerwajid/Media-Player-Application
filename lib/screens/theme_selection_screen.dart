@@ -70,7 +70,9 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
             centerTitle: false,
           ),
           body: Container(
-            decoration: BoxDecoration(gradient: currentTheme.mainGradient),
+            decoration: BoxDecoration(
+              gradient: AppThemes.availableThemes[_currentIndex].mainGradient,
+            ), // Use the focused/selected theme for preview
             child: SafeArea(
               child: Column(
                 children: [

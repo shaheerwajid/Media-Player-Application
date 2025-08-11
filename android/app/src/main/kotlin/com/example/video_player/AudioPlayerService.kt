@@ -94,6 +94,7 @@ class AudioPlayerService : Service() {
     private var bassBoostStrength: Int = 0
     private var virtualizerStrength: Int = 0
     private var playbackSpeed: Float = 1.0f
+    private var currentFilePath: String? = null
     private lateinit var mediaSession: MediaSessionCompat
     private var playbackStateUpdateHandler: Handler? = null
     private var playbackStateUpdateRunnable: Runnable? = null
@@ -160,12 +161,18 @@ class AudioPlayerService : Service() {
     private fun sendPlaybackState(state: String) {
         val position = mediaPlayer?.currentPosition ?: 0
         val duration = mediaPlayer?.duration ?: 0
-        val event = mapOf("state" to state, "position" to position, "duration" to duration)
+        val event = mutableMapOf<String, Any>(
+            "state" to state,
+            "position" to position,
+            "duration" to duration,
+        )
+        currentFilePath?.let { event["filePath"] = it }
         MainActivity.eventSink?.success(event)
     }
 
     private fun startAudio(filePath: String?, position: Int) {
         if (filePath == null) return
+        currentFilePath = filePath
         mediaPlayer?.release()
         equalizer?.release()
         bassBoost?.release()
@@ -190,13 +197,15 @@ class AudioPlayerService : Service() {
         }
         bassBoost = BassBoost(0, sessionId)
         bassBoost?.setStrength(bassBoostStrength.toShort())
-        bassBoost?.enabled = true
+        bassBoost?.enabled = eqEnabled
+        if (!eqEnabled) bassBoost?.setStrength(0)
         virtualizer = Virtualizer(0, sessionId)
         virtualizer?.setStrength(virtualizerStrength.toShort())
-        virtualizer?.enabled = true
+        virtualizer?.enabled = eqEnabled
+        if (!eqEnabled) virtualizer?.setStrength(0)
         reverb = PresetReverb(0, sessionId)
         reverb?.preset = reverbPreset.toShort()
-        reverb?.enabled = true
+        reverb?.enabled = eqEnabled
         // Set media session metadata (with duration)
         val durationMs = mediaPlayer?.duration?.toLong() ?: 0L
         val metadata = MediaMetadataCompat.Builder()
@@ -326,6 +335,7 @@ class AudioPlayerService : Service() {
         bassBoost?.release()
         virtualizer?.release()
         reverb?.release()
+        currentFilePath = null
         stopPlaybackStateUpdates()
         super.onDestroy()
     }
@@ -334,6 +344,7 @@ class AudioPlayerService : Service() {
     fun stopAudioExternally() {
         mediaPlayer?.stop()
         sendPlaybackState("stopped")
+        currentFilePath = null
         stopSelf()
     }
 
@@ -353,6 +364,18 @@ class AudioPlayerService : Service() {
     fun setEqualizerEnabled(enabled: Boolean) {
         eqEnabled = enabled
         equalizer?.enabled = enabled
+        // Master toggle for all effects
+        bassBoost?.enabled = enabled
+        virtualizer?.enabled = enabled
+        reverb?.enabled = enabled
+        if (!enabled) {
+            try { bassBoost?.setStrength(0) } catch (_: Exception) {}
+            try { virtualizer?.setStrength(0) } catch (_: Exception) {}
+        } else {
+            try { bassBoost?.setStrength(bassBoostStrength.toShort()) } catch (_: Exception) {}
+            try { virtualizer?.setStrength(virtualizerStrength.toShort()) } catch (_: Exception) {}
+            try { if (reverbPreset >= 0) reverb?.preset = reverbPreset.toShort() } catch (_: Exception) {}
+        }
     }
     fun getEqualizerEnabled(): Boolean {
         return eqEnabled
@@ -444,5 +467,30 @@ class AudioPlayerService : Service() {
     private fun stopPlaybackStateUpdates() {
         playbackStateUpdateRunnable?.let { playbackStateUpdateHandler?.removeCallbacks(it) }
         playbackStateUpdateRunnable = null
+    }
+
+    fun getCurrentPlaybackInfo(): Map<String, Any>? {
+        return try {
+            val isPlaying = mediaPlayer?.isPlaying ?: false
+            val position = mediaPlayer?.currentPosition ?: 0
+            val duration = mediaPlayer?.duration ?: 0
+            val state = if (isPlaying) "playing" else "paused"
+
+            mapOf(
+                "state" to state,
+                "position" to position,
+                "duration" to duration,
+                "filePath" to (currentFilePath ?: ""),
+                "playbackSpeed" to playbackSpeed,
+                "equalizerEnabled" to eqEnabled,
+                "equalizerPreset" to eqPreset,
+                "reverbPreset" to reverbPreset,
+                "bassBoostStrength" to bassBoostStrength,
+                "virtualizerStrength" to virtualizerStrength
+            )
+        } catch (e: Exception) {
+            Log.e("AudioPlayerService", "Error getting current playback info", e)
+            null
+        }
     }
 } 

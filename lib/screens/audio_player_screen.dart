@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 import '../services/native_audio_service.dart';
+import '../services/audio_cache_service.dart';
+import '../services/current_audio_context.dart';
 import 'audio_screen_standalone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/native_album_art.dart';
@@ -453,27 +455,82 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   }
 
   Future<void> _startCurrent() async {
-    final file = await widget.audios[_currentIndex].file;
+    final audioId = widget.audios[_currentIndex].id;
+
+    // Check cache first
+    File? file = await AudioCacheService.getCachedFile(audioId);
+
+    if (file == null) {
+      // Not in cache, get from asset and cache it
+      file = await widget.audios[_currentIndex].file;
+      if (file != null) {
+        AudioCacheService.cacheFile(audioId, file);
+      }
+    }
+
     if (file != null) {
       await NativeAudioService.startAudio(file.path, 0);
+      // Update global now playing immediately as native events may arrive later
+      NativeAudioService.nowPlayingNotifier.value = {
+        'state': 'playing',
+        'filePath': file.path,
+        'position': 0,
+        'duration': _durationMs ?? 0,
+      };
       setState(() {
         _isAudioPlayerReady = true;
+        _playbackState = 'playing';
+        _positionMs = 0;
+        _durationMs = null;
       });
+      // Update shared audio context so Now Playing bar knows current list/index
+      CurrentAudioContext.setSelection(widget.audios, _currentIndex);
+      _updateAlbumArtFuture(file);
       _playbackSpeed = await NativeAudioService.getPlaybackSpeed();
     }
   }
 
   Future<void> _playNext() async {
     if (_currentIndex < widget.audios.length - 1) {
-      _currentIndex++;
-      await _startCurrent();
+      setState(() {
+        _currentIndex++;
+      });
+      final file = await widget.audios[_currentIndex].file;
+      if (file != null) {
+        await NativeAudioService.playNextAudio(file.path, 0);
+        setState(() {
+          _isAudioPlayerReady = true;
+          _playbackState = 'playing';
+          _positionMs = 0;
+          _durationMs = null;
+        });
+        // Keep selection in sync for Now Playing bar
+        CurrentAudioContext.setSelection(widget.audios, _currentIndex);
+        _updateAlbumArtFuture(file);
+        _playbackSpeed = await NativeAudioService.getPlaybackSpeed();
+      }
     }
   }
 
   Future<void> _playPrevious() async {
     if (_currentIndex > 0) {
-      _currentIndex--;
-      await _startCurrent();
+      setState(() {
+        _currentIndex--;
+      });
+      final file = await widget.audios[_currentIndex].file;
+      if (file != null) {
+        await NativeAudioService.playNextAudio(file.path, 0);
+        setState(() {
+          _isAudioPlayerReady = true;
+          _playbackState = 'playing';
+          _positionMs = 0;
+          _durationMs = null;
+        });
+        // Keep selection in sync for Now Playing bar
+        CurrentAudioContext.setSelection(widget.audios, _currentIndex);
+        _updateAlbumArtFuture(file);
+        _playbackSpeed = await NativeAudioService.getPlaybackSpeed();
+      }
     }
   }
 
@@ -493,7 +550,10 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
           await NativeAudioService.playNextAudio(file.path, 0);
           setState(() {
             _isAudioPlayerReady = true;
+            _playbackState = 'playing';
           });
+          // Keep selection in sync for Now Playing bar
+          CurrentAudioContext.setSelection(widget.audios, _currentIndex);
           _playbackSpeed = await NativeAudioService.getPlaybackSpeed();
         }
       }
@@ -504,7 +564,10 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
         await NativeAudioService.playNextAudio(file.path, 0);
         setState(() {
           _isAudioPlayerReady = true;
+          _playbackState = 'playing';
         });
+        // Keep selection in sync for Now Playing bar
+        CurrentAudioContext.setSelection(widget.audios, _currentIndex);
         _playbackSpeed = await NativeAudioService.getPlaybackSpeed();
       }
     } else if (_loopMode == 'shuffle') {
@@ -519,7 +582,10 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
         await NativeAudioService.playNextAudio(file.path, 0);
         setState(() {
           _isAudioPlayerReady = true;
+          _playbackState = 'playing';
         });
+        // Keep selection in sync for Now Playing bar
+        CurrentAudioContext.setSelection(widget.audios, _currentIndex);
         _playbackSpeed = await NativeAudioService.getPlaybackSpeed();
       }
     } else if (_loopMode == 'stop') {
@@ -622,6 +688,16 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                             children: [
                               _buildOptionItem(
                                 c,
+                                Icons.equalizer,
+                                'Equalizer',
+                                'Tune audio with presets and bands',
+                                () {
+                                  Navigator.pop(c);
+                                  _showEqualizerDialog(context);
+                                },
+                              ),
+                              _buildOptionItem(
+                                c,
                                 Icons.repeat,
                                 'Playback Mode',
                                 _loopMode == 'order'
@@ -706,6 +782,376 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                     ),
                   ),
                 ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showEqualizerDialog(BuildContext context) async {
+    // Reuse the equalizer UI from audio_screen.dart via NativeAudioService
+    final bands = await NativeAudioService.getEqualizerBands();
+    if (bands == 0) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Equalizer'),
+          content: const Text('Equalizer not available.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    final range = await NativeAudioService.getEqualizerBandLevelRange();
+    final min = range[0];
+    final max = range[1];
+    List<int> levels = [];
+    for (int i = 0; i < bands; i++) {
+      levels.add(await NativeAudioService.getEqualizerBandLevel(i));
+    }
+    final presets = [
+      'Custom',
+      'Normal',
+      'Classical',
+      'Dance',
+      'Flat',
+      'Folk',
+      'Heavy Metal',
+      'Hip Hop',
+      'Jazz',
+      'Pop',
+      'Rock',
+    ];
+    int selectedPreset = 0;
+    bool eqEnabled = await NativeAudioService.getEqualizerEnabled();
+    int reverbPreset = await NativeAudioService.getReverbPreset();
+    int bassBoost = await NativeAudioService.getBassBoostStrength();
+    int virtualizer = await NativeAudioService.getVirtualizerStrength();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  return SafeArea(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: const [
+                              Text(
+                                'Equalizer',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Enabled',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              Switch(
+                                value: eqEnabled,
+                                onChanged: (v) async {
+                                  await NativeAudioService.setEqualizerEnabled(
+                                    v,
+                                  );
+                                  setState(() => eqEnabled = v);
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: List.generate(
+                                presets.length,
+                                (i) => Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  child: Opacity(
+                                    opacity: eqEnabled ? 1.0 : 0.5,
+                                    child: ChoiceChip(
+                                      label: Text(
+                                        presets[i],
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      selected: selectedPreset == i,
+                                      selectedColor: Colors.white24,
+                                      onSelected: eqEnabled
+                                          ? (sel) async {
+                                              if (sel) {
+                                                await NativeAudioService.setEqualizerPreset(
+                                                  i,
+                                                );
+                                                final newLevels =
+                                                    await NativeAudioService.getBandLevelsForPreset(
+                                                      i,
+                                                    );
+                                                setState(() {
+                                                  selectedPreset = i;
+                                                  for (
+                                                    int j = 0;
+                                                    j < levels.length &&
+                                                        j < newLevels.length;
+                                                    j++
+                                                  ) {
+                                                    levels[j] = newLevels[j];
+                                                  }
+                                                });
+                                              }
+                                            }
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'Reverb',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              ),
+                              Opacity(
+                                opacity: eqEnabled ? 1.0 : 0.5,
+                                child: DropdownButton<int>(
+                                  value: reverbPreset,
+                                  dropdownColor: Colors.black87,
+                                  style: const TextStyle(color: Colors.white),
+                                  items: List.generate(
+                                    7,
+                                    (i) => DropdownMenuItem(
+                                      value: i,
+                                      child: Text('Preset $i'),
+                                    ),
+                                  ),
+                                  onChanged: eqEnabled
+                                      ? (v) async {
+                                          if (v != null) {
+                                            await NativeAudioService.setReverbPreset(
+                                              v,
+                                            );
+                                            setState(() => reverbPreset = v);
+                                          }
+                                        }
+                                      : null,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'Bass Boost',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              ),
+                              Opacity(
+                                opacity: eqEnabled ? 1.0 : 0.5,
+                                child: SliderTheme(
+                                  data: SliderTheme.of(context).copyWith(
+                                    activeTrackColor: Colors.white,
+                                    inactiveTrackColor: Colors.white24,
+                                    thumbColor: Colors.white,
+                                    overlayColor: Colors.white24,
+                                    trackHeight: 4,
+                                    thumbShape: const RoundSliderThumbShape(
+                                      enabledThumbRadius: 8,
+                                    ),
+                                    overlayShape: const RoundSliderOverlayShape(
+                                      overlayRadius: 14,
+                                    ),
+                                  ),
+                                  child: Slider(
+                                    value: bassBoost.toDouble(),
+                                    min: 0,
+                                    max: 1000,
+                                    onChanged: eqEnabled
+                                        ? (v) async {
+                                            await NativeAudioService.setBassBoostStrength(
+                                              v.toInt(),
+                                            );
+                                            setState(
+                                              () => bassBoost = v.toInt(),
+                                            );
+                                          }
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'Virtualizer',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              ),
+                              Opacity(
+                                opacity: eqEnabled ? 1.0 : 0.5,
+                                child: SliderTheme(
+                                  data: SliderTheme.of(context).copyWith(
+                                    activeTrackColor: Colors.white,
+                                    inactiveTrackColor: Colors.white24,
+                                    thumbColor: Colors.white,
+                                    overlayColor: Colors.white24,
+                                    trackHeight: 4,
+                                    thumbShape: const RoundSliderThumbShape(
+                                      enabledThumbRadius: 8,
+                                    ),
+                                    overlayShape: const RoundSliderOverlayShape(
+                                      overlayRadius: 14,
+                                    ),
+                                  ),
+                                  child: Slider(
+                                    value: virtualizer.toDouble(),
+                                    min: 0,
+                                    max: 1000,
+                                    onChanged: eqEnabled
+                                        ? (v) async {
+                                            await NativeAudioService.setVirtualizerStrength(
+                                              v.toInt(),
+                                            );
+                                            setState(
+                                              () => virtualizer = v.toInt(),
+                                            );
+                                          }
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: const [
+                              Text(
+                                'Min dB',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              Text(
+                                'Max dB',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: List.generate(
+                                bands,
+                                (i) => Container(
+                                  width: 44,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        'B${i + 1}',
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                      RotatedBox(
+                                        quarterTurns: 3,
+                                        child: Opacity(
+                                          opacity: eqEnabled ? 1.0 : 0.5,
+                                          child: SliderTheme(
+                                            data: SliderTheme.of(context).copyWith(
+                                              activeTrackColor: Colors.white,
+                                              inactiveTrackColor:
+                                                  Colors.white24,
+                                              thumbColor: Colors.white,
+                                              overlayColor: Colors.white24,
+                                              trackHeight: 4,
+                                              thumbShape:
+                                                  const RoundSliderThumbShape(
+                                                    enabledThumbRadius: 8,
+                                                  ),
+                                              overlayShape:
+                                                  const RoundSliderOverlayShape(
+                                                    overlayRadius: 14,
+                                                  ),
+                                            ),
+                                            child: Slider(
+                                              value: levels[i].toDouble(),
+                                              min: min.toDouble(),
+                                              max: max.toDouble(),
+                                              onChanged: eqEnabled
+                                                  ? (v) async {
+                                                      await NativeAudioService.setEqualizerBandLevel(
+                                                        i,
+                                                        v.toInt(),
+                                                      );
+                                                      setState(
+                                                        () => levels[i] = v
+                                                            .toInt(),
+                                                      );
+                                                    }
+                                                  : null,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -1184,15 +1630,34 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   void _updateAlbumArtFuture(File? file) {
     if (_albumArtFile?.path != file?.path) {
       _albumArtFile = file;
-      _albumArtFuture = file != null
-          ? NativeAlbumArt.getAlbumArt(file.path)
-          : Future.value(null);
+      if (file != null) {
+        final audioId = widget.audios[_currentIndex].id;
+
+        // Check cache first
+        final cachedArt = AudioCacheService.getCachedAlbumArt(audioId);
+        if (cachedArt != null) {
+          _albumArtFuture = Future.value(cachedArt);
+        } else {
+          // Not in cache, fetch and cache it
+          _albumArtFuture = NativeAlbumArt.getAlbumArt(file.path).then((art) {
+            if (art != null) {
+              AudioCacheService.cacheAlbumArt(audioId, art);
+            }
+            return art;
+          });
+        }
+      } else {
+        _albumArtFuture = Future.value(null);
+      }
     }
   }
 
   @override
   void dispose() {
     _sub.cancel();
+    // Clear album art cache to free memory
+    _albumArtFuture = null;
+    _albumArtFile = null;
     super.dispose();
   }
 

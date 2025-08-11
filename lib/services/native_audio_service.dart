@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 class NativeAudioService {
   static const MethodChannel _channel = MethodChannel(
@@ -7,6 +8,29 @@ class NativeAudioService {
   static const EventChannel _eventChannel = EventChannel(
     'com.example.video_player/audio_events',
   );
+
+  // Global now playing notifier
+  static final ValueNotifier<Map<String, dynamic>?> nowPlayingNotifier =
+      ValueNotifier<Map<String, dynamic>?>(null);
+  static bool _bridgeInitialized = false;
+
+  static Future<void> ensurePlaybackBridgeInitialized() async {
+    if (_bridgeInitialized) return;
+    _bridgeInitialized = true;
+    // Seed current state
+    try {
+      final info = await getCurrentPlaybackInfo();
+      if (info != null) nowPlayingNotifier.value = info;
+    } catch (_) {}
+    // Subscribe to stream
+    playbackStateStream.listen((event) {
+      try {
+        if (event is Map && event['state'] != null) {
+          nowPlayingNotifier.value = Map<String, dynamic>.from(event);
+        }
+      } catch (_) {}
+    });
+  }
 
   static Future<void> startAudio(String filePath, int positionMs) async {
     await _channel.invokeMethod('startAudio', {
@@ -109,4 +133,12 @@ class NativeAudioService {
   static Stream<Map<String, dynamic>> get playbackStateStream => _eventChannel
       .receiveBroadcastStream()
       .map((event) => Map<String, dynamic>.from(event));
+
+  static Future<Map<String, dynamic>?> getCurrentPlaybackInfo() async {
+    final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+      'getCurrentPlaybackInfo',
+    );
+    if (result == null) return null;
+    return result.map((key, value) => MapEntry(key.toString(), value));
+  }
 }

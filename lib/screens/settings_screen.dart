@@ -178,7 +178,7 @@ class SettingsScreen extends StatelessWidget {
                                   ),
                                   child: Icon(
                                     Icons.star,
-                                    color: AppThemes.currentTextColor,
+                                    color: Colors.white,
                                     size: 24,
                                   ),
                                 ),
@@ -189,7 +189,7 @@ class SettingsScreen extends StatelessWidget {
                                     style: GoogleFonts.poppins(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold,
-                                      color: AppThemes.currentTextColor,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ),
@@ -508,7 +508,7 @@ class SettingsScreen extends StatelessWidget {
                                 ),
                                 child: Icon(
                                   Icons.privacy_tip,
-                                  color: AppThemes.currentTextColor,
+                                  color: Colors.white,
                                   size: 24,
                                 ),
                               ),
@@ -519,7 +519,7 @@ class SettingsScreen extends StatelessWidget {
                                   style: GoogleFonts.poppins(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    color: AppThemes.currentTextColor,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
@@ -533,7 +533,7 @@ class SettingsScreen extends StatelessWidget {
                           child: Text(
                             'Privacy Policy will be added soon.',
                             style: GoogleFonts.poppins(
-                              color: AppThemes.currentMutedTextColor,
+                              color: Colors.white,
                               fontSize: 16,
                               height: 1.5,
                             ),
@@ -675,7 +675,7 @@ class SettingsScreen extends StatelessWidget {
                                 ),
                                 child: Icon(
                                   Icons.feedback,
-                                  color: AppThemes.currentTextColor,
+                                  color: Colors.white,
                                   size: 24,
                                 ),
                               ),
@@ -686,7 +686,7 @@ class SettingsScreen extends StatelessWidget {
                                   style: GoogleFonts.poppins(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    color: AppThemes.currentTextColor,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
@@ -700,7 +700,7 @@ class SettingsScreen extends StatelessWidget {
                           child: Text(
                             'Feedback form will be added soon.',
                             style: GoogleFonts.poppins(
-                              color: AppThemes.currentMutedTextColor,
+                              color: Colors.white,
                               fontSize: 16,
                               height: 1.5,
                             ),

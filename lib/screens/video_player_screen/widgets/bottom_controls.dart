@@ -81,8 +81,8 @@ class _BottomControlsState extends State<BottomControls> {
                       color: Colors.black.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1,
+                        color: Colors.grey.withOpacity(0.6),
+                        width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -108,8 +108,8 @@ class _BottomControlsState extends State<BottomControls> {
                       color: Colors.black.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1,
+                        color: Colors.grey.withOpacity(0.6),
+                        width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -120,7 +120,7 @@ class _BottomControlsState extends State<BottomControls> {
                       ],
                     ),
                     child: Image.asset(
-                      'assets/mute.png',
+                      widget.isMuted ? 'assets/mute.png' : 'assets/unmute.png',
                       width: 20,
                       height: 20,
                       color: Colors.white,
@@ -135,8 +135,8 @@ class _BottomControlsState extends State<BottomControls> {
                       color: Colors.black.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1,
+                        color: Colors.grey.withOpacity(0.6),
+                        width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -209,8 +209,8 @@ class _BottomControlsState extends State<BottomControls> {
                             color: Colors.black.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
-                              width: 1,
+                              color: Colors.grey.withOpacity(0.6),
+                              width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
@@ -240,8 +240,8 @@ class _BottomControlsState extends State<BottomControls> {
                       color: Colors.black.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1,
+                        color: Colors.grey.withOpacity(0.6),
+                        width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -276,8 +276,8 @@ class _BottomControlsState extends State<BottomControls> {
                       color: Colors.black.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1,
+                        color: Colors.grey.withOpacity(0.6),
+                        width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -328,8 +328,8 @@ class _BottomControlsState extends State<BottomControls> {
                   color: Colors.black.withOpacity(0.8),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
-                    width: 1,
+                    color: Colors.grey.withOpacity(0.6),
+                    width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(

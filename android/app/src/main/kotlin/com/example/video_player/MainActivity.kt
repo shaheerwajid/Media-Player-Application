@@ -230,6 +230,10 @@ class MainActivity : FlutterActivity() {
                     startService(intent)
                     result.success(null)
                 }
+                "getCurrentPlaybackInfo" -> {
+                    val service = getAudioPlayerServiceInstance()
+                    result.success(service?.getCurrentPlaybackInfo())
+                }
                 else -> result.notImplemented()
             }
         }

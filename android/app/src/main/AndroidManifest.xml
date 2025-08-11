@@ -3,7 +3,7 @@
     <application
         android:label="video_player"
         android:icon="@mipmap/launcher_icon"
-        android:requestLegacyExternalStorage="true">
+        >
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -51,6 +51,7 @@
     </queries>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions"/>

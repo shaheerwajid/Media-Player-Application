@@ -611,6 +611,71 @@ class _VideoScreenState extends State<VideoScreen> {
   void _clearHistory() async {
     if (!mounted) return;
 
+    // Show confirm dialog before clearing history
+    final shouldClear = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppThemes.currentSurfaceColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.delete_forever, color: Colors.white, size: 28),
+              const SizedBox(width: 12),
+              Text(
+                'Clear History',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to clear all video history? This action cannot be undone.',
+            style: TextStyle(color: Colors.white, fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: AppThemes.currentMainGradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(
+                  'Clear History',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        );
+      },
+    );
+
+    // Only clear if user confirmed
+    if (shouldClear != true) return;
+
     await _prefs.remove('video_history');
     if (mounted) {
       setState(() {
@@ -832,51 +897,45 @@ class _VideoScreenState extends State<VideoScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // History Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'History',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                // History Section - Only show if there are videos in history
+                if (_historyVideos.isNotEmpty) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'History',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                    ),
-                    IconButton(
-                      icon: Image.asset(
-                        'assets/delete.png',
-                        width: 20,
-                        height: 20,
+                      IconButton(
+                        icon: Image.asset(
+                          'assets/delete.png',
+                          width: 20,
+                          height: 20,
+                        ),
+                        onPressed: () {
+                          _clearHistory();
+                        },
                       ),
-                      onPressed: () {
-                        _clearHistory();
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 110,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _historyVideos.length,
+                      itemBuilder: (context, index) {
+                        final asset = _historyVideos[index];
+                        return _buildHistoryCard(asset, index);
                       },
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 110,
-                  child: _historyVideos.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No recent videos',
-                            style: GoogleFonts.poppins(
-                              color: const Color(0xFF9BA8AB),
-                              fontSize: 14,
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _historyVideos.length,
-                          itemBuilder: (context, index) {
-                            final asset = _historyVideos[index];
-                            return _buildHistoryCard(asset, index);
-                          },
-                        ),
-                ),
-                const SizedBox(height: 24),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Add padding above filter tabs when history is empty
+                if (_historyVideos.isEmpty) const SizedBox(height: 24),
 
                 // Filter Tabs
                 Row(

@@ -479,8 +479,22 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         });
       }
       if (_isAudioOnly) {
-        _switchToAudio(resumePosition: Duration.zero);
-        _initializeAndPlay(_currentIndex, pause: true);
+        // Auto-play previous audio
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final file = await widget.videoAssets[_currentIndex].file;
+          if (file != null) {
+            // Reset audio state for new track
+            if (mounted) {
+              setState(() {
+                _audioPositionMs = 0;
+                _audioTotalDurationMs = 0;
+                _audioState = 'playing';
+              });
+            }
+            await NativeAudioService.playNextAudio(file.path, 0);
+            if (mounted) setState(() => _isAudioPlayerReady = true);
+          }
+        });
       } else {
         _initializeAndPlay(_currentIndex);
         _startHideTimer();
@@ -496,8 +510,22 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         });
       }
       if (_isAudioOnly) {
-        _switchToAudio(resumePosition: Duration.zero);
-        _initializeAndPlay(_currentIndex, pause: true);
+        // Auto-play next audio
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final file = await widget.videoAssets[_currentIndex].file;
+          if (file != null) {
+            // Reset audio state for new track
+            if (mounted) {
+              setState(() {
+                _audioPositionMs = 0;
+                _audioTotalDurationMs = 0;
+                _audioState = 'playing';
+              });
+            }
+            await NativeAudioService.playNextAudio(file.path, 0);
+            if (mounted) setState(() => _isAudioPlayerReady = true);
+          }
+        });
       } else {
         _initializeAndPlay(_currentIndex);
         _startHideTimer();
@@ -2311,18 +2339,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                             _audioState = 'paused';
                           });
                         } else {
-                          final assets = widget.videoAssets;
-                          final file = await assets[_currentIndex].file;
-                          if (file != null) {
-                            await NativeAudioService.playNextAudio(
-                              file.path,
-                              0,
-                            );
-                            if (mounted)
-                              setState(() {
-                                _audioState = 'playing';
-                                _isAudioPlayerReady = true;
-                              });
+                          // Resume if already loaded; do not restart from 0
+                          await NativeAudioService.playAudio();
+                          if (mounted) {
+                            setState(() {
+                              _audioState = 'playing';
+                            });
                           }
                         }
                       },
@@ -2706,46 +2728,48 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                             ),
                                                       ),
                                                       Expanded(
-                                                        child: SliderTheme(
-                                                          data:
-                                                              SliderTheme.of(
-                                                                context,
-                                                              ).copyWith(
-                                                                trackHeight: 2,
-                                                                thumbShape:
-                                                                    const RoundSliderThumbShape(
-                                                                      enabledThumbRadius:
-                                                                          6,
+                                                        child: Stack(
+                                                          children: [
+                                                            SliderTheme(
+                                                              data:
+                                                                  SliderTheme.of(
+                                                                    context,
+                                                                  ).copyWith(
+                                                                    trackHeight:
+                                                                        2,
+                                                                    thumbShape:
+                                                                        const RoundSliderThumbShape(
+                                                                          enabledThumbRadius:
+                                                                              6,
+                                                                        ),
+                                                                    overlayShape:
+                                                                        const RoundSliderOverlayShape(
+                                                                          overlayRadius:
+                                                                              12,
+                                                                        ),
+                                                                  ),
+                                                              child: Slider(
+                                                                value: player
+                                                                    .state
+                                                                    .position
+                                                                    .inMilliseconds
+                                                                    .toDouble()
+                                                                    .clamp(
+                                                                      0.0,
+                                                                      player
+                                                                          .state
+                                                                          .duration
+                                                                          .inMilliseconds
+                                                                          .toDouble(),
                                                                     ),
-                                                                overlayShape:
-                                                                    const RoundSliderOverlayShape(
-                                                                      overlayRadius:
-                                                                          12,
-                                                                    ),
-                                                              ),
-                                                          child: Slider(
-                                                            value: player
-                                                                .state
-                                                                .position
-                                                                .inMilliseconds
-                                                                .toDouble()
-                                                                .clamp(
-                                                                  0.0,
-                                                                  player
-                                                                      .state
-                                                                      .duration
-                                                                      .inMilliseconds
-                                                                      .toDouble(),
-                                                                ),
-                                                            max: player
-                                                                .state
-                                                                .duration
-                                                                .inMilliseconds
-                                                                .toDouble(),
-                                                            onChanged: (value) {
-                                                              _resetHideTimer();
-                                                              final clampedValue =
-                                                                  value.clamp(
+                                                                max: player
+                                                                    .state
+                                                                    .duration
+                                                                    .inMilliseconds
+                                                                    .toDouble(),
+                                                                onChanged: (value) {
+                                                                  _resetHideTimer();
+                                                                  final clampedValue = value.clamp(
                                                                     0.0,
                                                                     player
                                                                         .state
@@ -2753,28 +2777,102 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                                         .inMilliseconds
                                                                         .toDouble(),
                                                                   );
-                                                              player.seek(
-                                                                Duration(
-                                                                  milliseconds:
-                                                                      clampedValue
-                                                                          .toInt(),
+                                                                  player.seek(
+                                                                    Duration(
+                                                                      milliseconds:
+                                                                          clampedValue
+                                                                              .toInt(),
+                                                                    ),
+                                                                  );
+                                                                },
+                                                                onChangeStart:
+                                                                    (value) {
+                                                                      _resetHideTimer();
+                                                                    },
+                                                                onChangeEnd:
+                                                                    (value) {
+                                                                      _resetHideTimer();
+                                                                    },
+                                                                activeColor:
+                                                                    Colors
+                                                                        .white,
+                                                                inactiveColor:
+                                                                    Colors.white
+                                                                        .withOpacity(
+                                                                          0.3,
+                                                                        ),
+                                                              ),
+                                                            ),
+                                                            // Bookmark markers overlay
+                                                            if (_bookmarks
+                                                                    .isNotEmpty &&
+                                                                player
+                                                                        .state
+                                                                        .duration
+                                                                        .inMilliseconds >
+                                                                    0)
+                                                              Positioned.fill(
+                                                                child: LayoutBuilder(
+                                                                  builder:
+                                                                      (
+                                                                        context,
+                                                                        constraints,
+                                                                      ) {
+                                                                        return Stack(
+                                                                          children: _bookmarks.map((
+                                                                            ms,
+                                                                          ) {
+                                                                            final frac =
+                                                                                ms /
+                                                                                player.state.duration.inMilliseconds;
+                                                                            return Positioned(
+                                                                              left:
+                                                                                  (constraints.maxWidth -
+                                                                                      8) *
+                                                                                  frac,
+                                                                              top: 0,
+                                                                              bottom: 0,
+                                                                              child: GestureDetector(
+                                                                                onTap: () {
+                                                                                  _resetHideTimer();
+                                                                                  player.seek(
+                                                                                    Duration(
+                                                                                      milliseconds: ms,
+                                                                                    ),
+                                                                                  );
+                                                                                },
+                                                                                child: Container(
+                                                                                  width: 8,
+                                                                                  height: 8,
+                                                                                  decoration: BoxDecoration(
+                                                                                    color: Colors.amber,
+                                                                                    shape: BoxShape.circle,
+                                                                                    border: Border.all(
+                                                                                      color: Colors.black,
+                                                                                      width: 1,
+                                                                                    ),
+                                                                                    boxShadow: [
+                                                                                      BoxShadow(
+                                                                                        color: Colors.black.withOpacity(
+                                                                                          0.3,
+                                                                                        ),
+                                                                                        blurRadius: 2,
+                                                                                        offset: const Offset(
+                                                                                          0,
+                                                                                          1,
+                                                                                        ),
+                                                                                      ),
+                                                                                    ],
+                                                                                  ),
+                                                                                ),
+                                                                              ),
+                                                                            );
+                                                                          }).toList(),
+                                                                        );
+                                                                      },
                                                                 ),
-                                                              );
-                                                            },
-                                                            onChangeStart: (value) {
-                                                              _resetHideTimer();
-                                                            },
-                                                            onChangeEnd: (value) {
-                                                              _resetHideTimer();
-                                                            },
-                                                            activeColor:
-                                                                Colors.white,
-                                                            inactiveColor: Colors
-                                                                .white
-                                                                .withOpacity(
-                                                                  0.3,
-                                                                ),
-                                                          ),
+                                                              ),
+                                                          ],
                                                         ),
                                                       ),
                                                       Text(
@@ -3086,7 +3184,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                                     children: [
                                                       IconButton(
                                                         icon: Image.asset(
-                                                          'assets/mute.png',
+                                                          _isMuted
+                                                              ? 'assets/mute.png'
+                                                              : 'assets/unmute.png',
                                                           width: 24,
                                                           height: 24,
                                                           color: Colors.white,

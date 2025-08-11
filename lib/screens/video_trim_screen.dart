@@ -40,19 +40,29 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     _player = Player();
     _controller = VideoController(_player);
     await _player.open(Media(widget.originalFile.path), play: false);
-    // Wait tiny bit for metadata
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (mounted) {
-      setState(() {
-        _duration = _player.state.duration;
-        _start = 0.0;
-        _end = _duration.inMilliseconds.toDouble();
-      });
+    // Robustly wait for duration to become available (handles reopen cases)
+    Duration dur = Duration.zero;
+    try {
+      dur = await _player.stream.duration
+          .firstWhere((d) => d > Duration.zero)
+          .timeout(const Duration(seconds: 3));
+    } catch (_) {
+      // Fallback to current state if stream did not emit in time
+      dur = _player.state.duration;
     }
+    if (!mounted) return;
+    setState(() {
+      _duration = dur;
+      _start = 0.0;
+      _end = _duration.inMilliseconds.toDouble();
+    });
   }
 
   @override
   void dispose() {
+    try {
+      _player.pause();
+    } catch (_) {}
     _player.dispose();
     super.dispose();
   }

@@ -4,6 +4,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'screens/splash_screen.dart';
+import 'services/native_audio_service.dart';
 import 'screens/permission_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/settings_screen.dart';
@@ -29,6 +30,8 @@ class _AppWrapperState extends State<AppWrapper> {
   void initState() {
     super.initState();
     _initializeApp();
+    // Initialize playback bridge for Now Playing
+    NativeAudioService.ensurePlaybackBridgeInitialized();
   }
 
   Future<void> _initializeApp() async {
@@ -92,6 +95,7 @@ Future<void> main() async {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
+  await NativeAudioService.ensurePlaybackBridgeInitialized();
   runApp(const MyApp());
 }
 

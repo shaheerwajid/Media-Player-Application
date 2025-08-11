@@ -53,15 +53,40 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
   @override
   void initState() {
     super.initState();
-    _sliderValue = widget.playbackPositionMs.toDouble();
-    _lastNativePosition = widget.playbackPositionMs;
-    _lastNativeUpdateTime = DateTime.now().millisecondsSinceEpoch;
+    _resetSeekbarState();
     _ticker = createTicker(_onTick)..start();
   }
 
   @override
   void didUpdateWidget(AudioScreenStandalone oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // Check if this is a new track (duration changed significantly or position reset)
+    final oldDuration = oldWidget.totalDurationMs ?? 0;
+    final newDuration = widget.totalDurationMs ?? 0;
+    final durationChanged =
+        (oldDuration - newDuration).abs() >
+        1000; // More than 1 second difference
+
+    // Check if position was reset (went from high value to low value)
+    final positionReset =
+        oldWidget.playbackPositionMs > 1000 && widget.playbackPositionMs < 1000;
+
+    // Check if playback state changed
+    final stateChanged = oldWidget.playbackState != widget.playbackState;
+
+    // If it's a new track or position was reset, update everything
+    if (durationChanged || positionReset) {
+      _resetSeekbarState();
+      return;
+    }
+
+    // If playback state changed, handle it
+    if (stateChanged) {
+      _handlePlaybackStateChange();
+    }
+
+    // Normal position update (not seeking)
     if (!_isUserSeeking && widget.playbackPositionMs != _lastNativePosition) {
       _sliderValue = widget.playbackPositionMs.toDouble();
       _lastNativePosition = widget.playbackPositionMs;
@@ -78,9 +103,40 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
           (widget.totalDurationMs != null && widget.totalDurationMs! > 0)
           ? widget.totalDurationMs!.toDouble()
           : (_sliderValue + 1000);
-      setState(() {
-        _sliderValue = estPosition.clamp(0, maxValue).toDouble();
-      });
+
+      // Ensure we don't exceed the actual duration
+      final clampedPosition = estPosition.clamp(0, maxValue);
+
+      // Only update if the position is reasonable (not jumping too far)
+      if ((clampedPosition - _sliderValue).abs() < 5000) {
+        // Max 5 second jump
+        setState(() {
+          _sliderValue = clampedPosition.toDouble();
+        });
+      } else {
+        // If position jumped too far, sync with native position
+        _sliderValue = widget.playbackPositionMs.toDouble();
+        _lastNativePosition = widget.playbackPositionMs;
+        _lastNativeUpdateTime = now;
+      }
+    }
+  }
+
+  void _resetSeekbarState() {
+    _sliderValue = widget.playbackPositionMs.toDouble();
+    _lastNativePosition = widget.playbackPositionMs;
+    _lastNativeUpdateTime = DateTime.now().millisecondsSinceEpoch;
+    _isUserSeeking = false;
+    _seekTarget = null;
+  }
+
+  void _handlePlaybackStateChange() {
+    // When playback state changes (e.g., from paused to playing),
+    // ensure seekbar is in sync
+    if (!_isUserSeeking) {
+      _sliderValue = widget.playbackPositionMs.toDouble();
+      _lastNativePosition = widget.playbackPositionMs;
+      _lastNativeUpdateTime = DateTime.now().millisecondsSinceEpoch;
     }
   }
 
@@ -311,9 +367,31 @@ class _AudioScreenStandaloneState extends State<AudioScreenStandalone>
                                 setState(() {
                                   _isUserSeeking = false;
                                 });
+                                // Store the target position for syncing
+                                _seekTarget = value.toInt();
+
+                                // Call the seek callback
                                 if (widget.onSeek != null) {
                                   widget.onSeek!(value.toInt());
                                 }
+
+                                // Wait a bit for the native service to process the seek
+                                // then sync the seekbar with the actual position
+                                Future.delayed(
+                                  const Duration(milliseconds: 100),
+                                  () {
+                                    if (mounted && !_isUserSeeking) {
+                                      setState(() {
+                                        _sliderValue = widget.playbackPositionMs
+                                            .toDouble();
+                                        _lastNativePosition =
+                                            widget.playbackPositionMs;
+                                        _lastNativeUpdateTime = DateTime.now()
+                                            .millisecondsSinceEpoch;
+                                      });
+                                    }
+                                  },
+                                );
                               },
                               activeColor: isPlaying
                                   ? AppThemes.currentTheme.textColor
