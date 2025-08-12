@@ -1,6 +1,6 @@
 {
-    "name": "video_player",
-    "short_name": "video_player",
+    "name": "Media Player",
+    "short_name": "Media Player",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hexcode",

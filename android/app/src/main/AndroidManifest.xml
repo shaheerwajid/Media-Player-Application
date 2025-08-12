@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <application
-        android:label="video_player"
+        android:label="Media Player"
         android:icon="@mipmap/launcher_icon"
         >
         <activity

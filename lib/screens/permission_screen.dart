@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -283,116 +284,127 @@ class _PermissionScreenState extends State<PermissionScreen>
                       opacity: _fadeAnimation,
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 24),
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
+                        child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Illustration
-                            ScaleTransition(
-                              scale: _scaleAnimation,
-                              child: Container(
-                                width: 200,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: const Color(0xFFF5F5F5),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(
-                                    'assets/welcome2.png',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        decoration: BoxDecoration(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: AppThemes
+                                  .currentGlassmorphicDecoration
+                                  .copyWith(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Illustration
+                                  ScaleTransition(
+                                    scale: _scaleAnimation,
+                                    child: Container(
+                                      width: 200,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        color: Colors.transparent,
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.asset(
+                                          'assets/welcome2.png',
+                                          fit: BoxFit.contain,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Container(
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                    gradient:
+                                                        const LinearGradient(
+                                                          begin:
+                                                              Alignment.topLeft,
+                                                          end: Alignment
+                                                              .bottomRight,
+                                                          colors: [
+                                                            Color(0xFFE8F4FD),
+                                                            Color(0xFFF0E8FF),
+                                                          ],
+                                                        ),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.music_note,
+                                                    size: 60,
+                                                    color: Color(0xFF9B59B6),
+                                                  ),
+                                                );
+                                              },
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  // Permission text
+                                  Text(
+                                    'To find and manage media files, we need permission to access the files on your device.',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 32),
+                                  // Allow button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: ElevatedButton(
+                                      onPressed: _isLoading
+                                          ? null
+                                          : _requestPermission,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: const Color(
+                                          0xFF333333,
+                                        ),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
-                                          gradient: const LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              Color(0xFFE8F4FD),
-                                              Color(0xFFF0E8FF),
-                                            ],
+                                          side: const BorderSide(
+                                            color: Color(0xFFDDDDDD),
+                                            width: 1,
                                           ),
                                         ),
-                                        child: const Icon(
-                                          Icons.music_note,
-                                          size: 60,
-                                          color: Color(0xFF9B59B6),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            // Permission text
-                            Text(
-                              'To find and manage media files, we need permission to access the files on your device.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFF333333),
-                                fontSize: 16,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            // Allow button
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: _isLoading
-                                    ? null
-                                    : _requestPermission,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: const Color(0xFF333333),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: const BorderSide(
-                                      color: Color(0xFFDDDDDD),
-                                      width: 1,
+                                      ),
+                                      child: _isLoading
+                                          ? SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(const Color(0xFF333333)),
+                                              ),
+                                            )
+                                          : Text(
+                                              'ALLOW',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
                                     ),
                                   ),
-                                ),
-                                child: _isLoading
-                                    ? SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                const Color(0xFF333333),
-                                              ),
-                                        ),
-                                      )
-                                    : Text(
-                                        'ALLOW',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
