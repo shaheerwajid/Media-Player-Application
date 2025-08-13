@@ -886,6 +886,12 @@ class _VideoScreenState extends State<VideoScreen> {
                 });
               },
             ),
+            IconButton(
+              icon: Icon(Icons.refresh, color: Colors.white),
+              tooltip: 'Refresh',
+              onPressed: _fetchAllVideos,
+              iconSize: 30,
+            ),
           ],
         ],
       ),

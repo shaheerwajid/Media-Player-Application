@@ -10,12 +10,9 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
-import 'package:floating/floating.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:share_plus/share_plus.dart';
-// import 'package:cast/cast.dart';
-import 'package:easy_video_editor/easy_video_editor.dart';
 import 'dart:ui' as ui;
 import 'dart:ui';
 import 'dart:typed_data';
@@ -30,6 +27,7 @@ import 'package:simple_pip_mode/actions/pip_action.dart';
 import 'package:simple_pip_mode/actions/pip_actions_layout.dart';
 import 'package:simple_pip_mode/pip_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:volume_controller/volume_controller.dart';
 
 import 'widgets/video_controls_overlay.dart';
 import 'widgets/player_gestures.dart';
@@ -68,6 +66,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late int _currentIndex;
 
   double _currentVolume = 0.5;
+  late final VolumeController _volumeController;
+  StreamSubscription<double>? _volumeSubscription;
   bool _showVolumeOverlay = false;
   double? _dragStartDy;
   double? _dragStartVolume;
@@ -93,6 +93,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   final GlobalKey _videoScreenshotKey = GlobalKey();
   bool _isAudioOnly = false;
   bool _isAudioPlayerReady = false;
+
+  // Tap caching for double-tap fallback
+  double? _lastTapDx;
+  double? _lastTapWidth;
+  bool _doubleTapHandled = false;
+  DateTime? _lastDoubleTapAt;
 
   // Audio state variables
   String? _audioState;
@@ -137,6 +143,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   final SimplePip pip = SimplePip();
   bool isPlaying = true;
 
+  // Double-tap feedback state
+  bool _showDoubleTapLeft = false;
+  bool _showDoubleTapRight = false;
+  Key? _doubleTapLeftAnimKey;
+  Key? _doubleTapRightAnimKey;
+  Timer? _doubleTapLeftTimer;
+  Timer? _doubleTapRightTimer;
+
   void _handlePipAction(PipAction action) {
     switch (action) {
       case PipAction.play:
@@ -163,6 +177,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     super.initState();
     player = Player();
     controller = VideoController(player);
+    // Ensure player outputs at full scale; device volume controls loudness
+    player.setVolume(100.0);
+    // Initialize system volume controller and sync current volume
+    _volumeController = VolumeController.instance;
+    _volumeSubscription = _volumeController.addListener((volume) {
+      if (mounted) setState(() => _currentVolume = volume.clamp(0.0, 1.0));
+    }, fetchInitialVolume: true);
     _currentIndex = widget.initialIndex;
     _initPrefs();
     _initializeAndPlay(_currentIndex);
@@ -260,6 +281,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _audioStateSub?.cancel();
     _hideTimer?.cancel();
     _aspectModeOverlayTimer?.cancel();
+    try {
+      _volumeSubscription?.cancel();
+      _volumeController.removeListener();
+    } catch (_) {}
+    _doubleTapLeftTimer?.cancel();
+    _doubleTapRightTimer?.cancel();
     player.dispose();
     _completedSub?.cancel();
     _positionSub?.cancel();
@@ -557,7 +584,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         (_dragStartDy! - details.localPosition.dy) / constraints.maxHeight;
     if (_dragStartVolume != null) {
       _currentVolume = (_dragStartVolume! + delta).clamp(0.0, 1.0);
-      player.setVolume(_currentVolume * 100);
+      _volumeController.setVolume(_currentVolume);
     } else if (_dragStartBrightness != null) {
       _currentBrightness = (_dragStartBrightness! + delta).clamp(0.0, 1.0);
       _setBrightness(_currentBrightness);
@@ -578,7 +605,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Future<void> _setMute(bool mute) async {
-    await player.setVolume(mute ? 0.0 : _currentVolume * 100);
+    if (mute) {
+      await player.setVolume(0.0);
+    } else {
+      await player.setVolume(100.0);
+    }
     if (mounted) {
       setState(() {
         _isMuted = mute;
@@ -2277,6 +2308,50 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             decoration: BoxDecoration(gradient: AppThemes.currentMainGradient),
             child: PlayerGestures(
               onTap: _onTapVideo,
+              onTapDown: (details, constraints) {
+                _lastTapDx = details.localPosition.dx;
+                _lastTapWidth = constraints.maxWidth;
+                _doubleTapHandled = false;
+              },
+              onDoubleTap: () {
+                // If recognizer fires without onDoubleTapDown (platform differences),
+                // fallback to last tap position
+                if (_lastTapDx != null &&
+                    _lastTapWidth != null &&
+                    !_doubleTapHandled) {
+                  final right = _lastTapDx! > _lastTapWidth! * 0.5;
+                  final current = player.state.position;
+                  final target = current + Duration(seconds: right ? 10 : -10);
+                  player.seek(
+                    target.clamp(Duration.zero, player.state.duration),
+                  );
+                  _triggerDoubleTapFeedback(forward: right);
+                }
+                _startHideTimer();
+              },
+              onDoubleTapDown: (details, constraints) {
+                if (_isLocked || !isPlayerInitialized || _isAudioOnly) return;
+                final dx = details.localPosition.dx;
+                final width = constraints.maxWidth;
+                _doubleTapHandled = true;
+                _lastDoubleTapAt = DateTime.now();
+                if (dx > width * 0.5) {
+                  final current = player.state.position;
+                  final target = current + const Duration(seconds: 10);
+                  player.seek(
+                    target.clamp(Duration.zero, player.state.duration),
+                  );
+                  _triggerDoubleTapFeedback(forward: true);
+                } else {
+                  final current = player.state.position;
+                  final target = current - const Duration(seconds: 10);
+                  player.seek(
+                    target.clamp(Duration.zero, player.state.duration),
+                  );
+                  _triggerDoubleTapFeedback(forward: false);
+                }
+                _startHideTimer();
+              },
               onHorizontalDragStart: (details) {
                 if (_isLocked || !isPlayerInitialized || _isAudioOnly) return;
                 _dragStartDx = details.localPosition.dx;
@@ -2416,15 +2491,19 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                         horizontal: 20,
                                         vertical: 10,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black87,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
+                                      decoration: AppThemes
+                                          .currentGlassmorphicDecoration
+                                          .copyWith(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
                                       child: Text(
                                         'Seek: ${_seekOffsetSeconds > 0 ? '+' : ''}${_seekOffsetSeconds.round()}s',
-                                        style: GoogleFonts.poppins(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 16,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
@@ -2441,10 +2520,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                       horizontal: 20,
                                       vertical: 10,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black87,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                                    decoration: AppThemes
+                                        .currentGlassmorphicDecoration
+                                        .copyWith(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
                                     child: Column(
                                       children: [
                                         Icon(
@@ -2474,10 +2556,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                       horizontal: 20,
                                       vertical: 10,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black87,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                                    decoration: AppThemes
+                                        .currentGlassmorphicDecoration
+                                        .copyWith(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
                                     child: Column(
                                       children: [
                                         Icon(
@@ -2523,6 +2608,61 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                     ),
                                   ),
                                 ),
+                              // Double-tap feedback overlays (left/backward, right/forward)
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 16,
+                                            ),
+                                            child: AnimatedOpacity(
+                                              opacity: _showDoubleTapLeft
+                                                  ? 1.0
+                                                  : 0.0,
+                                              duration: const Duration(
+                                                milliseconds: 120,
+                                              ),
+                                              child: _buildDoubleTapIndicator(
+                                                forward: false,
+                                                animKey: _doubleTapLeftAnimKey,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Align(
+                                          alignment: Alignment.centerRight,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 16,
+                                            ),
+                                            child: AnimatedOpacity(
+                                              opacity: _showDoubleTapRight
+                                                  ? 1.0
+                                                  : 0.0,
+                                              duration: const Duration(
+                                                milliseconds: 120,
+                                              ),
+                                              child: _buildDoubleTapIndicator(
+                                                forward: true,
+                                                animKey: _doubleTapRightAnimKey,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                               // Lock button - only show when locked
                               if (_isLocked)
                                 Positioned(
@@ -3699,6 +3839,62 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
     // Notify parent screen immediately
     widget.onPlaylistsChanged?.call();
+  }
+
+  void _triggerDoubleTapFeedback({required bool forward}) {
+    if (forward) {
+      _doubleTapRightTimer?.cancel();
+      _doubleTapRightAnimKey = UniqueKey();
+      if (mounted) setState(() => _showDoubleTapRight = true);
+      _doubleTapRightTimer = Timer(const Duration(milliseconds: 700), () {
+        if (mounted) setState(() => _showDoubleTapRight = false);
+      });
+    } else {
+      _doubleTapLeftTimer?.cancel();
+      _doubleTapLeftAnimKey = UniqueKey();
+      if (mounted) setState(() => _showDoubleTapLeft = true);
+      _doubleTapLeftTimer = Timer(const Duration(milliseconds: 700), () {
+        if (mounted) setState(() => _showDoubleTapLeft = false);
+      });
+    }
+  }
+
+  Widget _buildDoubleTapIndicator({
+    required bool forward,
+    required Key? animKey,
+  }) {
+    final icon = forward ? Icons.forward_10 : Icons.replay_10;
+    final label = forward ? '+10s' : '-10s';
+    return TweenAnimationBuilder<double>(
+      key: animKey,
+      tween: Tween(begin: 0.9, end: 1.15),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutQuad,
+      builder: (context, scale, child) {
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: AppThemes.currentGlassmorphicDecoration.copyWith(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 28),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

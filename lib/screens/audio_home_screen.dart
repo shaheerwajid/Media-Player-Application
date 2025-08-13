@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 import '../services/audio_service.dart';
@@ -2223,41 +2222,47 @@ class _AudioHomeScreenState extends State<AudioHomeScreen> with RouteAware {
               ),
               onPressed: _startSearch,
             ),
-            PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, color: Colors.white),
-              onSelected: (value) {
-                switch (value) {
-                  case 'cache_stats':
-                    _showCacheStats();
-                    break;
-                  case 'clear_cache':
-                    _clearCache();
-                    break;
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'cache_stats',
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline),
-                      const SizedBox(width: 8),
-                      Text('Cache Info'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'clear_cache',
-                  child: Row(
-                    children: [
-                      Icon(Icons.clear_all),
-                      const SizedBox(width: 8),
-                      Text('Clear Cache'),
-                    ],
-                  ),
-                ),
-              ],
+            IconButton(
+              icon: Icon(Icons.refresh, color: Colors.white),
+              tooltip: 'Refresh',
+              onPressed: _fetchAllAudios,
+              iconSize: 30,
             ),
+            // PopupMenuButton<String>(
+            //   icon: Icon(Icons.more_vert, color: Colors.white),
+            //   onSelected: (value) {
+            //     switch (value) {
+            //       case 'cache_stats':
+            //         _showCacheStats();
+            //         break;
+            //       case 'clear_cache':
+            //         _clearCache();
+            //         break;
+            //     }
+            //   },
+            //   itemBuilder: (context) => [
+            //     PopupMenuItem(
+            //       value: 'cache_stats',
+            //       child: Row(
+            //         children: [
+            //           Icon(Icons.info_outline),
+            //           const SizedBox(width: 8),
+            //           Text('Cache Info'),
+            //         ],
+            //       ),
+            //     ),
+            //     PopupMenuItem(
+            //       value: 'clear_cache',
+            //       child: Row(
+            //         children: [
+            //           Icon(Icons.clear_all),
+            //           const SizedBox(width: 8),
+            //           Text('Clear Cache'),
+            //         ],
+            //       ),
+            //     ),
+            //   ],
+            // ),
           ],
         ],
       ),

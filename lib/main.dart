@@ -8,7 +8,6 @@ import 'services/native_audio_service.dart';
 import 'screens/permission_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/settings_screen.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'theme_data.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
